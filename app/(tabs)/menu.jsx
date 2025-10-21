@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, SafeAreaView, TextInput, ScrollView, Pressable, FlatList, Image } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, FlatList, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import { useCart } from '../../context/CartContext'; // Go up two directories to access context
+import { useCart } from '../../context/CartContext';
 
 // --- MOCK DATA ---
 // In a real application, you would fetch this data from your Firebase Firestore database.
@@ -88,4 +89,3 @@ export default function MenuScreen() {
     </SafeAreaView>
   );
 }
-
