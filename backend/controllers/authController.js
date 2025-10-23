@@ -7,7 +7,7 @@ const { sendOtpEmail } = require('../services/emailService');
 
 // Register a new user
 exports.register = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone, address1, address2 } = req.body;
     try {
         if (!name || !email || !password) {
             return res.status(400).json({ msg: 'Name, email and password are required' });
@@ -32,11 +32,14 @@ exports.register = async (req, res) => {
         if (pending) {
             pending.name = name;
             pending.password = hashedPassword;
+            pending.phone = phone;
+            pending.address1 = address1;
+            pending.address2 = address2;
             pending.otp = otp;
             pending.otpExpiresAt = otpExpiresAt;
             await pending.save();
         } else {
-            pending = new PendingUser({ name, email, password: hashedPassword, otp, otpExpiresAt });
+            pending = new PendingUser({ name, email, password: hashedPassword, phone, address1, address2, otp, otpExpiresAt });
             await pending.save();
         }
 
@@ -76,7 +79,7 @@ exports.verifyOtp = async (req, res) => {
         }
 
         // Create final user using hashed password from pending record
-        const newUser = new User({ name: pending.name, email: pending.email, password: pending.password, isVerified: true });
+    const newUser = new User({ name: pending.name, email: pending.email, password: pending.password, phone: pending.phone, address1: pending.address1, address2: pending.address2, isVerified: true });
         await newUser.save();
 
         // Remove pending record
@@ -115,6 +118,19 @@ exports.login = async (req, res) => {
             if (err) throw err;
             res.json({ token });
         });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+// Get current user profile
+exports.me = async (req, res) => {
+    try {
+        // auth middleware attaches userDoc
+        const user = req.userDoc || (await User.findById(req.user.id).select('-password -__v'));
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+        res.json({ user });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');

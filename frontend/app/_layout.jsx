@@ -2,7 +2,9 @@ import "../global.css"; // Import your global styles
 // frontend/app/_layout.jsx
 import React, { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { CartProvider } from '../context/CartContext';
 import * as SplashScreen from 'expo-splash-screen';
 import Toast from 'react-native-toast-message';
 
@@ -35,8 +37,11 @@ function MainLayout() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <MainLayout />
-      <Toast />
+      <CartProvider>
+        <StatusBar style="dark" backgroundColor="#FFFFFF" />
+        <MainLayout />
+        <Toast />
+      </CartProvider>
     </AuthProvider>
   );
 }

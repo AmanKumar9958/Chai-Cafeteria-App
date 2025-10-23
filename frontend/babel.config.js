@@ -15,7 +15,7 @@ module.exports = function (api) {
         },
       ],
       "react-native-worklets/plugin",
-      "expo-router/babel",
+      // "expo-router/babel",
     ],
   };
 };

@@ -22,6 +22,8 @@ app.get('/', (req, res) => {
 
 // Define Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+// Menu routes
+app.use('/api/menu', require('./routes/menuRoutes'));
 
 // We will add our auth and menu routes here later
 

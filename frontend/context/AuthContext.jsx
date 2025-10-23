@@ -19,6 +19,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [userToken, setUserToken] = useState(null);
+  const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -28,6 +29,14 @@ export const AuthProvider = ({ children }) => {
         if (token) {
           // You might want to verify the token with the backend here
           setUserToken(token);
+          // fetch profile
+          try {
+            const res = await axios.get(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+            setUser(res.data.user || null);
+          } catch (e) {
+            console.error('Failed to verify token on load', e?.message || e);
+            setUser(null);
+          }
         }
       } catch (e) {
         console.error('Failed to load token from storage', e);
@@ -44,6 +53,13 @@ export const AuthProvider = ({ children }) => {
       const { token } = response.data;
       setUserToken(token);
       await AsyncStorage.setItem('userToken', token);
+      // fetch user profile
+      try {
+        const res = await axios.get(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+        setUser(res.data.user || null);
+      } catch (e) {
+        console.error('Failed to fetch profile after login', e?.message || e);
+      }
       Toast.show({ type: 'success', text1: 'Welcome back!' });
       router.replace('/(tabs)/home'); // Navigate to home on successful login
     } catch (error) {
@@ -57,6 +73,13 @@ export const AuthProvider = ({ children }) => {
     try {
       setUserToken(token);
       await AsyncStorage.setItem('userToken', token);
+      // fetch profile
+      try {
+        const res = await axios.get(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+        setUser(res.data.user || null);
+      } catch (e) {
+        console.error('Failed to fetch profile after authenticateWithToken', e?.message || e);
+      }
       Toast.show({ type: 'success', text1: welcomeText });
       router.replace('/(tabs)/home');
     } catch (e) {
@@ -66,9 +89,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     setUserToken(null);
+    setUser(null);
     await AsyncStorage.removeItem('userToken');
     Toast.show({ type: 'success', text1: 'Logged out' });
-    router.replace('/'); // Navigate back to login
+    router.replace('/login'); // Navigate to login
   };
 
   const value = {
@@ -77,6 +101,7 @@ export const AuthProvider = ({ children }) => {
     login,
     authenticateWithToken,
     logout,
+    user,
   };
 
   return (
