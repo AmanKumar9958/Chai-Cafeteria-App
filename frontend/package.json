@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
-<<<<<<< HEAD:frontend/package.json
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.9",
     "@react-navigation/elements": "^2.6.3",
@@ -21,17 +20,6 @@
     "axios": "^1.12.2",
     "expo": "~54.0.18",
     "expo-constants": "~18.0.10",
-=======
-    "@react-native-async-storage/async-storage": "^1.24.0",
-    "@react-navigation/bottom-tabs": "^7.4.0",
-    "@react-navigation/elements": "^2.6.3",
-    "@react-navigation/native": "^7.1.8",
-    "@react-navigation/native-stack": "^7.3.16",
-    "expo": "^54.0.15",
-    "expo-auth-session": "~7.0.8",
-    "expo-constants": "~18.0.9",
-    "expo-crypto": "~15.0.7",
->>>>>>> 54d233a464c060fec7e511c7dd07e4402318aea0:package.json
     "expo-font": "~14.0.9",
     "expo-haptics": "~15.0.7",
     "expo-image": "~3.0.10",
