@@ -89,7 +89,12 @@ export default function CartScreen() {
                 <Text className="text-white font-bold">Checkout</Text>
               </Pressable>
 
-              <Pressable onPress={() => clear()} className="mt-3 items-center">
+              <Pressable onPress={() => {
+                Alert.alert('Clear cart', 'Are you sure you want to clear the cart?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Clear', style: 'destructive', onPress: () => { clear(); Toast.show({ type: 'success', text1: 'Cart cleared' }); } }
+                ]);
+              }} className="mt-3 items-center">
                 <Text className="text-red-500">Clear cart</Text>
               </Pressable>
             </View>

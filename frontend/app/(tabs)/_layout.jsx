@@ -1,7 +1,7 @@
 // frontend/app/(tabs)/_layout.jsx
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
@@ -15,28 +15,28 @@ export default function TabLayout() {
         name="home" // Corresponds to home.jsx
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="home" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="home-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="menu" // Corresponds to menu.jsx
         options={{
           title: 'Menu',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="cutlery" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="restaurant-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="orders" // Corresponds to orders.jsx
         options={{
           title: 'Orders',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="shopping-bag" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="cart-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile" // Corresponds to profile.jsx
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="user" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="person-outline" color={color} />,
         }}
       />
     </Tabs>

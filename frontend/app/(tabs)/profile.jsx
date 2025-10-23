@@ -49,7 +49,7 @@ export default function ProfileScreen() {
   const display = user || { name: 'User', email: '-', phone: '-', address1: '-', address2: '-' };
 
   return (
-    <SafeAreaView className="flex-1 bg-white p-6">
+    <SafeAreaView className="flex-1 bg-[#F9FAFB] p-6">
       <View className="items-center mt-2 mb-6">
         <View className="w-24 h-24 rounded-full bg-gray-100 items-center justify-center">
           <Text className="text-xl font-bold">{(display.name || 'U').charAt(0)}</Text>
@@ -85,12 +85,12 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View className="flex-row items-center mb-4">
+        {/* <View className="flex-row items-center mb-4">
           <View className="flex-1">
             <Text className="text-sm text-gray-400">Address 2 - (Work)</Text>
             <Text className="text-base">{display.address2 || '-'}</Text>
           </View>
-        </View>
+        </View> */}
       </View>
 
       <Pressable onPress={() => { /* TODO: open edit profile */ }} className="mt-6 border-2 border-[#C7A27C] rounded-lg p-4 items-center">
