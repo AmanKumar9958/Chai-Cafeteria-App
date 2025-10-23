@@ -69,6 +69,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshProfile = async () => {
+    if (!userToken) return;
+    try {
+      const res = await axios.get(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${userToken}` } });
+      setUser(res.data.user || null);
+      return res.data.user;
+    } catch (e) {
+      console.error('Failed to refresh profile', e?.message || e);
+      return null;
+    }
+  };
+
   const authenticateWithToken = async (token, welcomeText = 'Welcome!') => {
     try {
       setUserToken(token);
@@ -101,6 +113,7 @@ export const AuthProvider = ({ children }) => {
     login,
     authenticateWithToken,
     logout,
+    refreshProfile,
     user,
   };
 

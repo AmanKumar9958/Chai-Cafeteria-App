@@ -136,3 +136,26 @@ exports.me = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
+
+// Update current user's profile
+exports.updateMe = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name, phone, address1, address2 } = req.body;
+
+        // Only update allowed fields
+        const updates = {};
+        if (typeof name !== 'undefined') updates.name = name;
+        if (typeof phone !== 'undefined') updates.phone = phone;
+        if (typeof address1 !== 'undefined') updates.address1 = address1;
+        if (typeof address2 !== 'undefined') updates.address2 = address2;
+
+        const user = await User.findByIdAndUpdate(userId, { $set: updates }, { new: true }).select('-password -__v');
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        res.json({ user, msg: 'Profile updated' });
+    } catch (err) {
+        console.error('updateMe error', err.message);
+        res.status(500).send('Server error');
+    }
+};

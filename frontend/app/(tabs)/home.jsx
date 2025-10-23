@@ -12,7 +12,7 @@ const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
 
 export default function HomeScreen({ navigation }) {
-  const { userToken } = useAuth();
+  const { user: authUser } = useAuth();
   const { items: cartItems } = useCart();
   const [name, setName] = useState('User');
   const [greeting, setGreeting] = useState('Good Morning');
@@ -38,19 +38,10 @@ export default function HomeScreen({ navigation }) {
     fetchCategories();
   }, []);
 
-  // Load name from /auth/me if token present
+  // Update displayed name immediately when AuthContext user changes
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!userToken) return;
-      try {
-        const res = await axios.get(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${userToken}` } });
-        setName(res.data.user?.name || 'User');
-      } catch (err) {
-        console.error('Failed to get profile', err?.message || err);
-      }
-    };
-    fetchProfile();
-  }, [userToken]);
+    setName(authUser?.name || 'User');
+  }, [authUser]);
 
   const renderCategory = ({ item }) => (
     <Pressable className="bg-white rounded-lg p-4 mb-4 flex-row items-center justify-between" onPress={() => router.push({ pathname: '/(tabs)/menu', params: { category: item._id } })}>
