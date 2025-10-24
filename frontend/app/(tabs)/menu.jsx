@@ -1,128 +1,210 @@
-// frontend/app/(tabs)/menu.jsx
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TextInput, FlatList, Pressable } from 'react-native';
+import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator, Image } from 'react-native'; // Added Image, ActivityIndicator
 import { Feather, Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
+// If using Toast, make sure it's configured in your root layout
+// import Toast from 'react-native-toast-message'; 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
+import { useLocalSearchParams } from 'expo-router'; // Import useLocalSearchParams
 
-const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
-const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
+const RAW_API = process.env.EXPO_PUBLIC_API_URL;
+const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api'; // Fallback needed
 
-export default function MenuScreen({ route }) {
-  const initialCategory = route?.params?.category || 'all';
+// --- MOCK ITEM DATA (Replace with API call eventually) ---
+// We'll keep this simple for now, assuming your API fetches items based on categoryId
+const allMockItems = [
+    { _id: 'item1', name: "Wendy's Burger", price: 10.40, categoryId: 'burgerCatId', image: 'https://placehold.co/150x150/FFC72C/FFFFFF?text=Burger' },
+    { _id: 'item2', name: 'Veggie Burger', price: 10.40, categoryId: 'burgerCatId', image: 'https://placehold.co/150x150/FFC72C/FFFFFF?text=Burger' },
+    { _id: 'item3', name: 'Margherita Magic', price: 12.00, categoryId: 'pizzaCatId', image: 'https://placehold.co/150x150/008000/FFFFFF?text=Pizza' },
+    // ... add more items with correct categoryIds
+];
+// --- END MOCK ITEM DATA ---
+
+export default function MenuScreen() {
+  // Get the categoryId passed from the previous screen
+  const { categoryId } = useLocalSearchParams(); 
+  
+  // Set the initial selected category based on the param, default to 'all'
+  const initialCategory = categoryId || 'all'; 
+
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState([{ _id: 'all', name: 'All' }]); // Start with 'All'
   const [selected, setSelected] = useState(initialCategory);
   const [items, setItems] = useState([]);
-  const { addItem, items: cartItems } = useCart();
+  const [isLoadingCats, setIsLoadingCats] = useState(true);
+  const [isLoadingItems, setIsLoadingItems] = useState(false);
+  const { addItem, cartItems } = useCart(); // Use updated CartContext
 
-  const catsRef = useRef(null);
+  const catsRef = useRef(null); // Ref for the horizontal category FlatList
 
+  // --- Effects ---
+
+  // Fetch categories when the component mounts
   useEffect(() => {
     const fetchCats = async () => {
+      setIsLoadingCats(true);
       try {
         const res = await axios.get(`${API_URL}/menu/categories`);
         setCategories([{ _id: 'all', name: 'All' }, ...(res.data.categories || [])]);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load categories:", err);
+      } finally {
+        setIsLoadingCats(false);
       }
     };
     fetchCats();
   }, []);
 
-  // If navigation provided a category param (e.g., from Home), ensure we select it when route.params changes
+  // Update selected state if the categoryId param changes (e.g., navigating again)
   useEffect(() => {
-    if (route?.params?.category) {
-      setSelected(route.params.category);
+    if (categoryId) {
+      setSelected(categoryId);
     }
-  }, [route?.params?.category]);
+  }, [categoryId]);
 
-  // when categories load or selected changes, scroll the category list so selected is visible
+  // Scroll the category list when 'selected' changes or categories load
   useEffect(() => {
-    if (!catsRef.current || !categories || categories.length === 0) return;
-    const idx = categories.findIndex(c => c._id === selected);
-    if (idx >= 0) {
+    if (isLoadingCats || !catsRef.current || !categories || categories.length === 0) return;
+    
+    const index = categories.findIndex(c => c._id === selected);
+    if (index >= 0) {
+      // Try scrolling to the index. Add error handling.
       try {
-        catsRef.current.scrollToIndex({ index: Math.max(0, idx - 1), animated: true, viewPosition: 0.5 });
-      } catch {
-        // ignore if index out of range or scroll fails
+          catsRef.current.scrollToIndex({
+            index: index,
+            animated: true,
+            viewPosition: 0.5, // Try to center the item
+          });
+      } catch (e) {
+         console.warn("Failed to scroll category list:", e);
+         // Fallback or alternative scroll method if scrollToIndex fails
+         // const ITEM_WIDTH = 108; // Approximate width + margin
+         // const offset = Math.max(0, index * ITEM_WIDTH - ITEM_WIDTH / 2); // Center attempt
+         // catsRef.current.scrollToOffset({ offset, animated: true });
       }
     }
-  }, [selected, categories]);
+  }, [selected, categories, isLoadingCats]); // Rerun when categories load too
 
-  // debounce the query to avoid firing API calls on every keystroke
+  // Debounce search query
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedQuery(query), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(timer);
   }, [query]);
 
+  // Fetch items based on selected category or search query
   useEffect(() => {
     const fetchItems = async () => {
+      setIsLoadingItems(true);
       try {
+        let res;
         if (debouncedQuery.length > 0) {
-          const res = await axios.get(`${API_URL}/menu/search?q=${encodeURIComponent(debouncedQuery)}`);
-          setItems(res.data.items || []);
-          return;
+          // --- TODO: Implement backend search endpoint ---
+          // res = await axios.get(`${API_URL}/menu/search?q=${encodeURIComponent(debouncedQuery)}`);
+          // For now, filter mock data:
+          setItems(allMockItems.filter(item => item.name.toLowerCase().includes(debouncedQuery.toLowerCase())));
+
+        } else if (selected === 'all') {
+            // --- TODO: Implement backend endpoint to get ALL items ---
+            // res = await axios.get(`${API_URL}/menu/items`);
+            // For now, use all mock data:
+             setItems(allMockItems);
         }
-        const res = await axios.get(`${API_URL}/menu/items?category=${selected}`);
-        setItems(res.data.items || []);
+         else {
+          // --- TODO: Implement backend endpoint to get items by categoryId ---
+          // res = await axios.get(`${API_URL}/menu/items?categoryId=${selected}`);
+          // For now, filter mock data:
+          setItems(allMockItems.filter(item => item.categoryId === selected));
+        }
+        // if (res) setItems(res.data.items || []);
+
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load items:", err);
+        setItems([]); // Clear items on error
+      } finally {
+        setIsLoadingItems(false);
       }
     };
     fetchItems();
   }, [selected, debouncedQuery]);
 
+  // --- Render Functions ---
+
   const renderCategory = ({ item, index }) => (
-    <Pressable onPress={() => setSelected(item._id)} className={`mr-3 rounded-lg items-center justify-center ${selected === item._id ? 'bg-[#C7A27C]' : 'bg-white'}`} style={{ width: 96, height: 72 }}>
-      <Text numberOfLines={1} ellipsizeMode="tail" className={`${selected === item._id ? 'text-white' : 'text-black'}`}>{item.name}</Text>
+    // Added padding, fixed width/height for better consistency
+    <Pressable 
+      onPress={() => setSelected(item._id)} 
+      className={`p-3 mr-3 rounded-lg items-center justify-center border ${selected === item._id ? 'bg-[#C7A27C] border-[#C7A27C]' : 'bg-white border-gray-200'}`} 
+      style={{ minWidth: 96, height: 48 }} // Ensure consistent size
+    >
+      <Text 
+        numberOfLines={1} 
+        ellipsizeMode="tail" 
+        className={`font-semibold ${selected === item._id ? 'text-white' : 'text-gray-700'}`}
+      >
+        {item.name}
+      </Text>
     </Pressable>
   );
 
+  const renderItemCard = ({ item }) => {
+    // Find item in cart to display quantity if needed (adjust based on CartContext)
+    const cartEntry = cartItems.find(cartItem => cartItem._id === item._id);
+    const quantityInCart = cartEntry?.qty || 0;
 
-
-  const renderItem = ({ item }) => {
-    const cartEntry = cartItems.find(c => c._id === item._id);
-    const qty = cartEntry?.qty || 0;
     return (
-      <View className="bg-white rounded-lg p-4 mb-4 flex-row items-center justify-between">
-        <View>
-          <Text className="font-bold">{item.name}</Text>
-          <Text className="text-sm text-gray-500">₹{item.price}</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {qty > 0 && <Text className="mr-3 font-bold">{qty}</Text>}
-          <Pressable onPress={() => { addItem(item); Toast.show({ type: 'success', text1: 'Added to cart' }); }} className="bg-[#C7A27C] p-3 rounded-full">
-            <Ionicons name="add" size={18} color="#fff" />
-          </Pressable>
-        </View>
-      </View>
+        // Using a card style similar to the reference image
+       <View className="flex-1 m-2 bg-white rounded-2xl shadow-md overflow-hidden">
+         <Image source={{ uri: item.image }} className="w-full h-32" resizeMode="cover"/>
+         <View className="p-3">
+           <Text className="text-base font-semibold text-gray-800 mb-1" numberOfLines={1}>{item.name}</Text>
+           <View className="flex-row justify-between items-center">
+             <Text className="text-sm text-gray-600">₹{item.price.toFixed(2)}</Text>
+             <Pressable 
+                onPress={() => { 
+                    addItem(item); 
+                    // Example using Alert, replace with Toast if configured
+                    // Toast.show({ type: 'success', text1: `${item.name} added` }); 
+                    alert(`${item.name} added to cart!`); // Simple confirmation
+                }} 
+                className="bg-orange-500 w-8 h-8 rounded-full items-center justify-center active:bg-orange-600"
+             >
+               <Ionicons name="add" size={20} color="white" />
+             </Pressable>
+           </View>
+           {/* Optionally display quantity if > 0 */}
+           {/* {quantityInCart > 0 && <Text className="text-xs text-green-600 mt-1">{quantityInCart} in cart</Text>} */}
+         </View>
+       </View>
     );
   };
 
-  return (
-    <SafeAreaView className="flex-1 bg-[#F9FAFB] p-4">
-      {/* Use a single FlatList for items and render the search + category scroller as the header so items always appear immediately below it. */}
-      <FlatList
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={i => i._id}
-        contentContainerStyle={{ paddingBottom: 20 }}
-        ListHeaderComponent={() => (
-          <>
-            <View className="flex-row items-center bg-white rounded-lg p-2 mb-4">
-              <Feather name="search" size={18} color="#9CA3AF" style={{ marginLeft: 8 }} />
-              <TextInput value={query} onChangeText={setQuery} placeholder="Search items or categories" className="flex-1 p-2" />
-              {query.length > 0 && (
-                <Pressable onPress={() => setQuery('')} className="px-2">
-                  <Feather name="x" size={18} color="#9CA3AF" />
-                </Pressable>
-              )}
-            </View>
 
+  return (
+    <SafeAreaView className="flex-1 bg-gray-50 pt-5">
+      {/* Search Input */}
+      <View className="px-4 mb-4">
+        <View className="flex-row items-center bg-white rounded-full p-3 shadow-sm border border-gray-200">
+          <Feather name="search" size={20} color="#9CA3AF" className="mr-3" />
+          <TextInput 
+            value={query} 
+            onChangeText={setQuery} 
+            placeholder="Search items..." 
+            className="flex-1 text-lg text-gray-700" 
+            clearButtonMode="while-editing" // iOS clear button
+          />
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery('')} className="p-1">
+              <Feather name="x-circle" size={20} color="#9CA3AF" />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {/* Horizontal Category List */}
+      {!isLoadingCats && categories.length > 0 && (
+         <View style={{ height: 64 }}> {/* Give the FlatList a fixed height */}
             <FlatList
               ref={catsRef}
               data={categories}
@@ -130,11 +212,34 @@ export default function MenuScreen({ route }) {
               showsHorizontalScrollIndicator={false}
               renderItem={renderCategory}
               keyExtractor={c => c._id}
-              contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 8 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}
+              // Add props needed for scrollToIndex to work reliably
+              getItemLayout={(data, index) => (
+                { length: 96 + 12, offset: (96 + 12) * index, index } // width + margin
+              )}
             />
-          </>
-        )}
-      />
+         </View>
+      )}
+
+      {/* Items Grid */}
+      {isLoadingItems ? (
+        <View className="flex-1 justify-center items-center">
+            <ActivityIndicator size="large" color="#C7A27C"/>
+        </View>
+      ) : items.length === 0 ? (
+         <View className="flex-1 justify-center items-center">
+            <Text className="text-gray-500">No items found.</Text>
+         </View>
+      ) : (
+        <FlatList
+          data={items}
+          renderItem={renderItemCard} // Use the new card renderer
+          keyExtractor={i => i._id}
+          numColumns={2} // Two columns
+          contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 }

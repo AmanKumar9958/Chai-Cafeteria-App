@@ -9,7 +9,9 @@ import Toast from 'react-native-toast-message';
 export default function CartScreen() {
   const { items, updateQty, removeItem, clear } = useCart();
 
-  const total = items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
+  // Guard items in case the context is not yet initialized
+  const itemsList = items || [];
+  const total = itemsList.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
 
   const renderItem = ({ item }) => (
     <View className="bg-white rounded-lg p-4 mb-4 flex-row items-center justify-between">
@@ -70,13 +72,13 @@ export default function CartScreen() {
         </Pressable>
       </View>
 
-      {items.length === 0 ? (
+      {itemsList.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <Text className="text-gray-500">Your cart is empty</Text>
         </View>
       ) : (
         <>
-          <FlatList data={items} renderItem={renderItem} keyExtractor={i => i._id} />
+          <FlatList data={itemsList} renderItem={renderItem} keyExtractor={i => i._id} />
 
           <View className="mt-auto">
             <View className="flex-row justify-between items-center p-4">
