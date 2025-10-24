@@ -24,6 +24,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 // Menu routes
 app.use('/api/menu', require('./routes/menuRoutes'));
+// Orders routes
+app.use('/api/orders', require('./routes/orderRoutes'));
 
 // We will add our auth and menu routes here later
 
