@@ -35,7 +35,7 @@ export default function MenuScreen() {
   const [items, setItems] = useState([]);
   const [isLoadingCats, setIsLoadingCats] = useState(true);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const { addItem, cartItems } = useCart(); // Use updated CartContext
+  const { addItem } = useCart();
 
   const catsRef = useRef(null); // Ref for the horizontal category FlatList
 
@@ -98,7 +98,7 @@ export default function MenuScreen() {
     const fetchItems = async () => {
       setIsLoadingItems(true);
       try {
-        let res;
+  // placeholder response variable removed (unused)
         if (debouncedQuery.length > 0) {
           // --- TODO: Implement backend search endpoint ---
           // res = await axios.get(`${API_URL}/menu/search?q=${encodeURIComponent(debouncedQuery)}`);
@@ -149,10 +149,7 @@ export default function MenuScreen() {
   );
 
   const renderItemCard = ({ item }) => {
-    // Find item in cart to display quantity if needed (adjust based on CartContext)
-    const cartEntry = cartItems.find(cartItem => cartItem._id === item._id);
-    const quantityInCart = cartEntry?.qty || 0;
-
+  // (cart entry lookup removed — not displaying per-item qty here)
     return (
         // Using a card style similar to the reference image
        <View className="flex-1 m-2 bg-white rounded-2xl shadow-md overflow-hidden">

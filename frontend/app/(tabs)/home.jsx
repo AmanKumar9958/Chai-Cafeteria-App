@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, FlatList, TextInput, Image, ActivityIndicator } from 'react-native';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { View, Text, Pressable, FlatList, Image, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
@@ -41,6 +41,41 @@ export default function HomeScreen() {
   const [greeting, setGreeting] = useState('Good Morning');
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Carousel (auto-sliding) setup
+  const sliderRef = useRef(null);
+  const [sliderIndex, setSliderIndex] = useState(0);
+  const SLIDE_INTERVAL = 3000; // ms
+  const sliderImages = useMemo(() => [
+    require('../../assets/images/category-biryani.png'),
+    require('../../assets/images/category-burger.png'),
+    require('../../assets/images/category-pizza.png'),
+    require('../../assets/images/category-chilli.png'),
+  ], []);
+  const sliderWidth = Dimensions.get('window').width - 48; // match paddingHorizontal: 24
+  const pausedRef = useRef(false); // pause auto-slide while user interacts
+
+  // auto-advance the slider every SLIDE_INTERVAL ms
+  useEffect(() => {
+    if (!sliderImages || sliderImages.length === 0) return;
+    const id = setInterval(() => {
+      // do not advance while paused (user touching/swiping)
+      if (!pausedRef.current) {
+        setSliderIndex(prev => (prev + 1) % sliderImages.length);
+      }
+    }, SLIDE_INTERVAL);
+    return () => clearInterval(id);
+  }, [sliderImages, SLIDE_INTERVAL]);
+
+  // scroll when sliderIndex changes
+  useEffect(() => {
+    if (!sliderRef.current) return;
+    try {
+      sliderRef.current.scrollTo({ x: sliderIndex * sliderWidth, animated: true });
+    } catch (_e) {
+      // ignore scroll errors
+    }
+  }, [sliderIndex, sliderWidth]);
 
   useEffect(() => {
     // Set greeting based on time
@@ -99,6 +134,32 @@ export default function HomeScreen() {
         <FontAwesome name="search" size={20} color="#999" className="mr-3" />
         <TextInput placeholder="Search for chai, snacks..." className="flex-1 text-lg text-gray-700" />
       </View> */}
+
+      {/* Carousel - auto sliding images */}
+      <View className="mb-6">
+        <ScrollView
+          ref={sliderRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => {
+            const x = e.nativeEvent.contentOffset.x || 0;
+            const idx = Math.round(x / sliderWidth);
+            setSliderIndex(idx % sliderImages.length);
+          }}
+            // Pause auto-advance when user touches or starts dragging, resume when interaction ends
+            onTouchStart={() => { pausedRef.current = true; }}
+            onTouchEnd={() => { pausedRef.current = false; }}
+            onScrollBeginDrag={() => { pausedRef.current = true; }}
+            onScrollEndDrag={() => { pausedRef.current = false; }}
+        >
+          {sliderImages.map((src, i) => (
+            <View key={i} style={{ width: sliderWidth, height: 160 }} className="rounded-2xl overflow-hidden mr-4">
+              <Image source={src} className="w-full h-full" resizeMode="cover" />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Categories Title */}
       <View className="flex-row items-center justify-between mb-5">
