@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Text, Pressable, FlatList, Image, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
 import { useCart } from '../../context/CartContext';
@@ -33,10 +33,12 @@ const categoryStyles = {
 };
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(24, insets.bottom + 90);
   const { user: authUser } = useAuth();
   // Safely read cart items from context (fall back to empty array if context missing)
   const cartContext = useCart() || {};
-  const cartItems = cartContext.cartItems || []; // Use cartItems from context
+  const cartItems = cartContext.items || []; // items from CartContext
   const [name, setName] = useState('User');
   const [greeting, setGreeting] = useState('Good Morning');
   const [categories, setCategories] = useState([]);
@@ -45,7 +47,7 @@ export default function HomeScreen() {
   // Carousel (auto-sliding) setup
   const sliderRef = useRef(null);
   const [sliderIndex, setSliderIndex] = useState(0);
-  const SLIDE_INTERVAL = 3000; // ms
+  const SLIDE_INTERVAL = 2000; // ms
   const sliderImages = useMemo(() => [
     require('../../assets/images/category-biryani.png'),
     require('../../assets/images/category-burger.png'),
@@ -86,13 +88,12 @@ export default function HomeScreen() {
       setIsLoading(true);
       try {
         const res = await axios.get(`${API_URL}/menu/categories`);
-        // Map fetched categories to include styling info
+        // Map fetched categories to include styling fallback for local image if no URL in DB
         const styledCategories = (res.data.categories || []).map(cat => ({
           ...cat,
-          // Match DB name (cat.name) to the key in categoryStyles
           style: categoryStyles[cat.name] || categoryStyles.Default,
         }));
-        setCategories(styledCategories.slice(0, 6)); // Show max 6 categories
+        setCategories(styledCategories.slice(0, 6));
       } catch (err) {
         console.error('Failed to load categories', err?.message || err);
       } finally {
@@ -181,7 +182,7 @@ export default function HomeScreen() {
     >
       {/* Image now takes up 100% of the card */}
       <Image
-        source={item.style?.img}
+        source={item.image ? { uri: item.image } : item.style?.img}
         className="w-full h-full"
         resizeMode="cover" // This will make the image fill the box (cropping if needed)
       />
@@ -201,7 +202,7 @@ export default function HomeScreen() {
           renderItem={renderCategoryCard}
           keyExtractor={c => c._id}
           ListHeaderComponent={renderHeader}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: bottomPad }}
           showsVerticalScrollIndicator={false}
         />
       )}

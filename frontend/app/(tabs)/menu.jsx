@@ -1,27 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator, Image } from 'react-native'; // Added Image, ActivityIndicator
+import { View, Text, TextInput, FlatList, SectionList, Pressable, ActivityIndicator, Image } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
-// If using Toast, make sure it's configured in your root layout
-// import Toast from 'react-native-toast-message'; 
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message'; 
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
-import { useLocalSearchParams } from 'expo-router'; // Import useLocalSearchParams
+import { useLocalSearchParams, router } from 'expo-router'; // Import useLocalSearchParams
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
 const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api'; // Fallback needed
 
-// --- MOCK ITEM DATA (Replace with API call eventually) ---
-// We'll keep this simple for now, assuming your API fetches items based on categoryId
-const allMockItems = [
-    { _id: 'item1', name: "Wendy's Burger", price: 10.40, categoryId: 'burgerCatId', image: 'https://placehold.co/150x150/FFC72C/FFFFFF?text=Burger' },
-    { _id: 'item2', name: 'Veggie Burger', price: 10.40, categoryId: 'burgerCatId', image: 'https://placehold.co/150x150/FFC72C/FFFFFF?text=Burger' },
-    { _id: 'item3', name: 'Margherita Magic', price: 12.00, categoryId: 'pizzaCatId', image: 'https://placehold.co/150x150/008000/FFFFFF?text=Pizza' },
-    // ... add more items with correct categoryIds
-];
-// --- END MOCK ITEM DATA ---
+// No mock data — real API will be used
 
 export default function MenuScreen() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(24, insets.bottom + 90); // ensure last row clears floating tab bar
   // Get the categoryId passed from the previous screen
   const { categoryId } = useLocalSearchParams(); 
   
@@ -35,7 +28,7 @@ export default function MenuScreen() {
   const [items, setItems] = useState([]);
   const [isLoadingCats, setIsLoadingCats] = useState(true);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const { addItem } = useCart();
+  const { addItem, items: itemsInCart } = useCart();
 
   const catsRef = useRef(null); // Ref for the horizontal category FlatList
 
@@ -93,31 +86,22 @@ export default function MenuScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Fetch items based on selected category or search query
+  // Fetch items based on selected category or search query (from real backend)
   useEffect(() => {
     const fetchItems = async () => {
       setIsLoadingItems(true);
       try {
-  // placeholder response variable removed (unused)
+        let res;
         if (debouncedQuery.length > 0) {
-          // --- TODO: Implement backend search endpoint ---
-          // res = await axios.get(`${API_URL}/menu/search?q=${encodeURIComponent(debouncedQuery)}`);
-          // For now, filter mock data:
-          setItems(allMockItems.filter(item => item.name.toLowerCase().includes(debouncedQuery.toLowerCase())));
-
+          res = await axios.get(`${API_URL}/menu/search`, { params: { q: debouncedQuery } });
+          setItems(res.data?.items || []);
         } else if (selected === 'all') {
-            // --- TODO: Implement backend endpoint to get ALL items ---
-            // res = await axios.get(`${API_URL}/menu/items`);
-            // For now, use all mock data:
-             setItems(allMockItems);
+          res = await axios.get(`${API_URL}/menu/items`);
+          setItems(res.data?.items || []);
+        } else {
+          res = await axios.get(`${API_URL}/menu/items`, { params: { category: selected } });
+          setItems(res.data?.items || []);
         }
-         else {
-          // --- TODO: Implement backend endpoint to get items by categoryId ---
-          // res = await axios.get(`${API_URL}/menu/items?categoryId=${selected}`);
-          // For now, filter mock data:
-          setItems(allMockItems.filter(item => item.categoryId === selected));
-        }
-        // if (res) setItems(res.data.items || []);
 
       } catch (err) {
         console.error("Failed to load items:", err);
@@ -152,90 +136,115 @@ export default function MenuScreen() {
   // (cart entry lookup removed — not displaying per-item qty here)
     return (
         // Using a card style similar to the reference image
-       <View className="flex-1 m-2 bg-white rounded-2xl shadow-md overflow-hidden">
-         <Image source={{ uri: item.image }} className="w-full h-32" resizeMode="cover"/>
-         <View className="p-3">
-           <Text className="text-base font-semibold text-gray-800 mb-1" numberOfLines={1}>{item.name}</Text>
-           <View className="flex-row justify-between items-center">
-             <Text className="text-sm text-gray-600">₹{item.price.toFixed(2)}</Text>
-             <Pressable 
-                onPress={() => { 
-                    addItem(item); 
-                    // Example using Alert, replace with Toast if configured
-                    // Toast.show({ type: 'success', text1: `${item.name} added` }); 
-                    alert(`${item.name} added to cart!`); // Simple confirmation
-                }} 
-                className="bg-orange-500 w-8 h-8 rounded-full items-center justify-center active:bg-orange-600"
-             >
-               <Ionicons name="add" size={20} color="white" />
-             </Pressable>
+       <View className="flex-1 p-2">
+         <View className="bg-white rounded-2xl shadow-md overflow-hidden">
+           <Image source={{ uri: item.image || 'https://placehold.co/300x200?text=No+Image' }} className="w-full h-32" resizeMode="cover"/>
+           <View className="p-3">
+             <Text className="text-base font-semibold text-gray-800 mb-1" numberOfLines={1}>{item.name}</Text>
+             <View className="flex-row justify-between items-center">
+               <Text className="text-sm text-gray-600">₹{Number(item.price).toFixed(2)}</Text>
+               <Pressable 
+                  onPress={() => { 
+                      addItem(item); 
+                      Toast.show({ type: 'success', text1: 'Added to cart', text2: item.name, position: 'bottom' });
+                  }} 
+                  className="bg-orange-500 w-8 h-8 rounded-full items-center justify-center active:bg-orange-600"
+               >
+                 <Ionicons name="add" size={20} color="white" />
+               </Pressable>
+             </View>
            </View>
-           {/* Optionally display quantity if > 0 */}
-           {/* {quantityInCart > 0 && <Text className="text-xs text-green-600 mt-1">{quantityInCart} in cart</Text>} */}
          </View>
        </View>
     );
   };
 
+  // Render a row containing up to two item cards
+  const renderRow = ({ item: row }) => {
+    const [left, right] = row;
+    return (
+      <View className="flex-row">
+        {left && renderItemCard({ item: left })}
+        {right ? renderItemCard({ item: right }) : <View style={{ flex: 1, padding: 8 }} />}
+      </View>
+    );
+  };
+
+
+  // Build two-column rows for SectionList
+  const rows = [];
+  for (let i = 0; i < items.length; i += 2) {
+    rows.push([items[i], items[i + 1] || null]);
+  }
+  const sections = [{ title: 'menu', data: rows }];
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 pt-5">
-      {/* Search Input */}
-      <View className="px-4 mb-4">
-        <View className="flex-row items-center bg-white rounded-full p-3 shadow-sm border border-gray-200">
-          <Feather name="search" size={20} color="#9CA3AF" className="mr-3" />
-          <TextInput 
-            value={query} 
-            onChangeText={setQuery} 
-            placeholder="Search items..." 
-            className="flex-1 text-lg text-gray-700" 
-            clearButtonMode="while-editing" // iOS clear button
-          />
-          {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')} className="p-1">
-              <Feather name="x-circle" size={20} color="#9CA3AF" />
-            </Pressable>
-          )}
-        </View>
-      </View>
-
-      {/* Horizontal Category List */}
-      {!isLoadingCats && categories.length > 0 && (
-         <View style={{ height: 64 }}> {/* Give the FlatList a fixed height */}
-            <FlatList
-              ref={catsRef}
-              data={categories}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              renderItem={renderCategory}
-              keyExtractor={c => c._id}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}
-              // Add props needed for scrollToIndex to work reliably
-              getItemLayout={(data, index) => (
-                { length: 96 + 12, offset: (96 + 12) * index, index } // width + margin
+      <SectionList
+        sections={sections}
+        keyExtractor={(row, index) => {
+          const [a, b] = row;
+          return `${a?._id || 'empty'}_${b?._id || 'empty'}_${index}`;
+        }}
+        renderItem={renderRow}
+        stickySectionHeadersEnabled={true}
+        renderSectionHeader={() => (
+          !isLoadingCats && categories.length > 0 ? (
+            <View style={{ height: 64, backgroundColor: 'white' }}>
+              <FlatList
+                ref={catsRef}
+                data={categories}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                renderItem={renderCategory}
+                keyExtractor={c => c._id}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}
+                getItemLayout={(data, index) => (
+                  { length: 96 + 12, offset: (96 + 12) * index, index }
+                )}
+              />
+            </View>
+          ) : (
+            <View style={{ height: 64, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="small" color="#C7A27C" />
+            </View>
+          )
+        )}
+        ListHeaderComponent={(
+          <View className="px-4 mb-2">
+            <View className="flex-row items-center bg-white rounded-full p-3 shadow-sm border border-gray-200">
+              <Feather name="search" size={20} color="#9CA3AF" className="mr-3" />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search items..."
+                className="flex-1 text-lg text-gray-700"
+                clearButtonMode="while-editing"
+              />
+              {query.length > 0 && (
+                <Pressable onPress={() => setQuery('')} className="p-1">
+                  <Feather name="x-circle" size={20} color="#9CA3AF" />
+                </Pressable>
               )}
-            />
-         </View>
-      )}
-
-      {/* Items Grid */}
-      {isLoadingItems ? (
-        <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#C7A27C"/>
+            </View>
+          </View>
+        )}
+        ListEmptyComponent={isLoadingItems ? (
+          <View className="py-10 items-center"><ActivityIndicator size="large" color="#C7A27C"/></View>
+        ) : (
+          <View className="py-10 items-center"><Text className="text-gray-500">No items found.</Text></View>
+        )}
+        contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: bottomPad }}
+        showsVerticalScrollIndicator={false}
+      />
+      {itemsInCart.length > 0 && (
+        <View style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 16 }}>
+          <Pressable onPress={() => router.push('/checkout')} className="bg-orange-500 py-4 rounded-full shadow-lg items-center">
+            <Text className="text-white font-semibold">
+              Checkout • {itemsInCart.reduce((s, it) => s + (it.qty || 0), 0)} item(s)
+            </Text>
+          </Pressable>
         </View>
-      ) : items.length === 0 ? (
-         <View className="flex-1 justify-center items-center">
-            <Text className="text-gray-500">No items found.</Text>
-         </View>
-      ) : (
-        <FlatList
-          data={items}
-          renderItem={renderItemCard} // Use the new card renderer
-          keyExtractor={i => i._id}
-          numColumns={2} // Two columns
-          contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 20 }}
-          showsVerticalScrollIndicator={false}
-        />
       )}
     </SafeAreaView>
   );
