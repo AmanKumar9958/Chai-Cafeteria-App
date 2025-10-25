@@ -28,10 +28,9 @@ function MainLayout() {
     let unsubscribeResponse = null;
     const initNotifications = async () => {
       if (!userToken) return;
+      // Remote push registration can be disabled via env (EXPO_PUBLIC_ENABLE_REMOTE_PUSH=false)
       const expoPushToken = await registerForPushNotificationsAsync();
-      if (expoPushToken) {
-        await sendPushTokenToBackend(expoPushToken, userToken);
-      }
+      if (expoPushToken) await sendPushTokenToBackend(expoPushToken, userToken);
       await scheduleRegularNotifications(); // 2x per day default
       // Optional: show a toast in foreground when notifications arrive
       unsubscribe = subscribeForegroundNotification(() => {

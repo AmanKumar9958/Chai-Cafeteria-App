@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import axios from 'axios';
 
 // Normalize API base from EXPO_PUBLIC_API_URL
@@ -28,6 +29,12 @@ export async function ensureAndroidChannel() {
 
 export async function registerForPushNotificationsAsync() {
   try {
+    // Allow disabling remote push registration (e.g., if not using Firebase/APNs)
+    const ENABLE_REMOTE = process.env.EXPO_PUBLIC_ENABLE_REMOTE_PUSH === 'true';
+    if (!ENABLE_REMOTE) {
+      console.log('Remote push registration is disabled. Skipping token fetch.');
+      return null;
+    }
     const isPhysicalDevice = Device.isDevice;
     if (!isPhysicalDevice) {
       console.warn('Push notifications require a physical device.');
@@ -47,7 +54,16 @@ export async function registerForPushNotificationsAsync() {
       return null;
     }
 
-    const token = await Notifications.getExpoPushTokenAsync();
+    // Pass EAS projectId explicitly to avoid discovery issues in dev clients
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ||
+      Constants?.easConfig?.projectId ||
+      process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
+      null;
+
+    const token = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined
+    );
     return token?.data || null;
   } catch (e) {
     console.error('Failed to register for push notifications', e?.message || e);
