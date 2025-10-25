@@ -19,17 +19,17 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FCE7D8]">
+    <SafeAreaView className="flex-1 bg-chai-bg">
       <StatusBar style="dark" />
       <View className="flex-1 justify-center p-8">
         <View className="items-center mb-10">
           <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
-          <Text className="text-3xl font-bold mt-4">Welcome Back!</Text>
-          <Text className="text-gray-500 mt-2 font-semibold">Login to your account</Text>
+          <Text className="text-3xl font-bold mt-4 text-chai-text-primary">Welcome Back!</Text>
+          <Text className="text-chai-text-secondary mt-2 font-semibold">Login to your account</Text>
         </View>
 
         <TextInput
-          className="bg-[#FCE7D8] border-2 p-4 rounded-lg mb-4 text-lg"
+          className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
           placeholder="Email Address"
           value={email}
           onChangeText={setEmail}
@@ -37,7 +37,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
         />
         <TextInput
-          className="bg-[#FCE7D8] border-2 p-4 rounded-lg mb-6 text-lg"
+          className="bg-white border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary"
           placeholder="Password"
           value={password}
           onChangeText={setPassword}
@@ -47,7 +47,7 @@ export default function LoginScreen() {
 
         <Pressable
           onPress={handleLogin}
-          className="bg-[#C7A27C] p-4 rounded-lg items-center"
+          className="bg-chai-primary p-4 rounded-xl items-center"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -58,9 +58,9 @@ export default function LoginScreen() {
         </Pressable>
 
         <View className="flex-row justify-center mt-6">
-          <Text className="text-gray-500">Don&apos;t have an account? </Text>
+          <Text className="text-chai-text-secondary">Don&apos;t have an account? </Text>
           <Link href="/register">
-            <Text className="text-[#C7A27C] font-bold">Sign Up</Text>
+            <Text className="text-chai-primary font-bold">Sign Up</Text>
           </Link>
         </View>
       </View>

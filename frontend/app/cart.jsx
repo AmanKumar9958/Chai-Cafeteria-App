@@ -14,10 +14,10 @@ export default function CartScreen() {
   const total = itemsList.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
 
   const renderItem = ({ item }) => (
-    <View className="bg-white rounded-lg p-4 mb-4 flex-row items-center justify-between">
+    <View className="bg-white rounded-lg p-4 mb-4 flex-row items-center justify-between border border-chai-divider">
       <View style={{ flex: 1 }}>
-        <Text className="font-bold">{item.name}</Text>
-        <Text className="text-sm text-gray-500">₹{item.price}</Text>
+        <Text className="font-bold text-chai-text-primary">{item.name}</Text>
+        <Text className="text-sm text-chai-text-secondary">₹{item.price}</Text>
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -47,7 +47,7 @@ export default function CartScreen() {
 
         <Text className="mx-2 font-bold">{item.qty || 0}</Text>
 
-        <Pressable onPress={() => { updateQty(item._id, (item.qty || 0) + 1); Toast.show({ type: 'success', text1: 'Updated quantity' }); }} className="p-2 ml-2 bg-[#C7A27C] rounded">
+        <Pressable onPress={() => { updateQty(item._id, (item.qty || 0) + 1); Toast.show({ type: 'success', text1: 'Updated quantity' }); }} className="p-2 ml-2 bg-chai-primary rounded">
           <Ionicons name="add" size={18} color="#fff" />
         </Pressable>
 
@@ -64,30 +64,31 @@ export default function CartScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F9FAFB] p-4">
+    <SafeAreaView className="flex-1 bg-chai-bg p-4">
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-xl font-bold text-black" numberOfLines={1} ellipsizeMode="tail">My Cart</Text>
+        <Text className="text-xl font-bold text-chai-text-primary" numberOfLines={1} ellipsizeMode="tail">My Cart</Text>
         <Pressable onPress={() => router.back()} className="p-2">
-          <Text className="text-gray-500">Close</Text>
+          <Text className="text-chai-text-secondary">Close</Text>
         </Pressable>
       </View>
 
       {itemsList.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <Text className="text-gray-500">Your cart is empty</Text>
+          <Text className="text-chai-text-secondary">Your cart is empty</Text>
         </View>
       ) : (
         <>
           <FlatList data={itemsList} renderItem={renderItem} keyExtractor={i => i._id} />
-
           <View className="mt-auto">
+            {/* Divider above total */}
+            <View className="h-[1px] bg-chai-divider mx-4" />
             <View className="flex-row justify-between items-center p-4">
-              <Text className="font-bold">Total</Text>
-              <Text className="font-bold">₹{Number(total).toFixed(2)}</Text>
+              <Text className="font-bold text-chai-text-primary">Total</Text>
+              <Text className="font-bold text-chai-text-primary">₹{Number(total).toFixed(2)}</Text>
             </View>
 
             <View className="p-4">
-              <Pressable onPress={() => router.push('/checkout')} className="bg-[#C7A27C] p-4 rounded items-center">
+              <Pressable onPress={() => router.push('/checkout')} className="bg-chai-primary p-4 rounded items-center">
                 <Text className="text-white font-bold">Checkout</Text>
               </Pressable>
 

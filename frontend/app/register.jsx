@@ -37,23 +37,23 @@ export default function RegisterScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-[#FCE7D8]">
+        <SafeAreaView className="flex-1 bg-chai-bg">
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 32 }} keyboardShouldPersistTaps="handled">
                     <View className="items-center mb-6">
                         <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
-                        <Text className="text-3xl font-bold mt-4">Welcome</Text>
-                        <Text className="text-gray-500 mt-2 font-semibold">Create your account</Text>
+                        <Text className="text-3xl font-bold mt-4 text-chai-text-primary">Welcome</Text>
+                        <Text className="text-chai-text-secondary mt-2 font-semibold">Create your account</Text>
                     </View>
 
-                    <TextInput className="bg-[#FCE7D8] border-2 p-4 rounded-lg mb-4 text-lg" placeholder="Full Name" value={name} onChangeText={setName} autoCapitalize='words' />
-                    <TextInput className="bg-[#FCE7D8] border-2 p-4 rounded-lg mb-4 text-lg" placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-                    <TextInput className="bg-[#FCE7D8] border-2 p-4 rounded-lg mb-4 text-lg" placeholder="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-                    <TextInput className="bg-[#FCE7D8] border-2 p-4 rounded-lg mb-6 text-lg" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize='none' />
-                    <TextInput className="bg-[#FCE7D8] border-2 p-4 rounded-lg mb-4 text-lg" placeholder="Address 1 (Home)" value={address1} onChangeText={setAddress1} />
-                    <TextInput className="bg-[#FCE7D8] border-2 p-4 rounded-lg mb-6 text-lg" placeholder="Address 2 (Work)" value={address2} onChangeText={setAddress2} />
+                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholder="Full Name" value={name} onChangeText={setName} autoCapitalize='words' />
+                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholder="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize='none' />
+                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholder="Address 1 (Home)" value={address1} onChangeText={setAddress1} />
+                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary" placeholder="Address 2 (Work)" value={address2} onChangeText={setAddress2} />
 
-                    <Pressable onPress={handleRegister} className="bg-[#C7A27C] w-full p-4 rounded-lg items-center justify-center" disabled={isLoading}>
+                    <Pressable onPress={handleRegister} className="bg-chai-primary w-full p-4 rounded-xl items-center justify-center" disabled={isLoading}>
                         {isLoading ? (
                             <ActivityIndicator color="white" />
                         ) : (
@@ -64,8 +64,8 @@ export default function RegisterScreen() {
                     </Pressable>
 
                     <View className="flex-row justify-center mt-6">
-                        <Text className="text-gray-500">Already have an account? </Text>
-                        <Link href="/login"><Text className="text-[#C7A27C] font-bold p-2">Login</Text></Link>
+                        <Text className="text-chai-text-secondary">Already have an account? </Text>
+                        <Link href="/login"><Text className="text-chai-primary font-bold p-2">Login</Text></Link>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>

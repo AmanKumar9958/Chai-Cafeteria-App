@@ -16,12 +16,12 @@ export default function MenuScreen() {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(24, insets.bottom + 90); // ensure last row clears floating tab bar
   // Get the categoryId passed from the previous screen
-  const { categoryId } = useLocalSearchParams(); 
+  const { categoryId, search: incomingSearch } = useLocalSearchParams(); 
   
   // Set the initial selected category based on the param, default to 'all'
   const initialCategory = categoryId || 'all'; 
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(incomingSearch ? String(incomingSearch) : '');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [categories, setCategories] = useState([{ _id: 'all', name: 'All' }]); // Start with 'All'
   const [selected, setSelected] = useState(initialCategory);
@@ -56,6 +56,13 @@ export default function MenuScreen() {
       setSelected(categoryId);
     }
   }, [categoryId]);
+
+  // If routed here with a search query from Home, seed the search box
+  useEffect(() => {
+    if (typeof incomingSearch !== 'undefined') {
+      setQuery(String(incomingSearch || ''));
+    }
+  }, [incomingSearch]);
 
   // Scroll the category list when 'selected' changes or categories load
   useEffect(() => {
@@ -119,13 +126,13 @@ export default function MenuScreen() {
     // Added padding, fixed width/height for better consistency
     <Pressable 
       onPress={() => setSelected(item._id)} 
-      className={`p-3 mr-3 rounded-lg items-center justify-center border ${selected === item._id ? 'bg-[#C7A27C] border-[#C7A27C]' : 'bg-white border-gray-200'}`} 
+      className={`p-3 mr-3 rounded-lg items-center justify-center border ${selected === item._id ? 'bg-chai-primary border-chai-primary' : 'bg-white border-chai-divider'}`} 
       style={{ minWidth: 96, height: 48 }} // Ensure consistent size
     >
       <Text 
         numberOfLines={1} 
         ellipsizeMode="tail" 
-        className={`font-semibold ${selected === item._id ? 'text-white' : 'text-gray-700'}`}
+        className={`font-semibold ${selected === item._id ? 'text-white' : 'text-chai-text-secondary'}`}
       >
         {item.name}
       </Text>
@@ -140,15 +147,15 @@ export default function MenuScreen() {
          <View className="bg-white rounded-2xl shadow-md overflow-hidden">
            <Image source={{ uri: item.image || 'https://placehold.co/300x200?text=No+Image' }} className="w-full h-32" resizeMode="cover"/>
            <View className="p-3">
-             <Text className="text-base font-semibold text-gray-800 mb-1" numberOfLines={1}>{item.name}</Text>
+             <Text className="text-base font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{item.name}</Text>
              <View className="flex-row justify-between items-center">
-               <Text className="text-sm text-gray-600">₹{Number(item.price).toFixed(2)}</Text>
+               <Text className="text-sm text-chai-text-secondary">₹{Number(item.price).toFixed(2)}</Text>
                <Pressable 
                   onPress={() => { 
                       addItem(item); 
                       Toast.show({ type: 'success', text1: 'Added to cart', text2: item.name, position: 'bottom' });
                   }} 
-                  className="bg-orange-500 w-8 h-8 rounded-full items-center justify-center active:bg-orange-600"
+                  className="bg-chai-primary w-8 h-8 rounded-full items-center justify-center active:opacity-90"
                >
                  <Ionicons name="add" size={20} color="white" />
                </Pressable>
@@ -179,7 +186,7 @@ export default function MenuScreen() {
   const sections = [{ title: 'menu', data: rows }];
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 pt-5">
+  <SafeAreaView className="flex-1 bg-chai-bg pt-5">
       <SectionList
         sections={sections}
         keyExtractor={(row, index) => {
@@ -212,13 +219,13 @@ export default function MenuScreen() {
         )}
         ListHeaderComponent={(
           <View className="px-4 mb-2">
-            <View className="flex-row items-center bg-white rounded-full p-3 shadow-sm border border-gray-200">
+            <View className="flex-row items-center bg-white rounded-full p-3 shadow-sm border border-chai-divider">
               <Feather name="search" size={20} color="#9CA3AF" className="mr-3" />
               <TextInput
                 value={query}
                 onChangeText={setQuery}
                 placeholder="Search items..."
-                className="flex-1 text-lg text-gray-700"
+                className="flex-1 text-lg text-chai-text-primary"
                 clearButtonMode="while-editing"
               />
               {query.length > 0 && (
@@ -239,7 +246,7 @@ export default function MenuScreen() {
       />
       {itemsInCart.length > 0 && (
         <View style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 16 }}>
-          <Pressable onPress={() => router.push('/checkout')} className="bg-orange-500 py-4 rounded-full shadow-lg items-center">
+          <Pressable onPress={() => router.push('/checkout')} className="bg-chai-primary py-4 rounded-full shadow-lg items-center">
             <Text className="text-white font-semibold">
               Checkout • {itemsInCart.reduce((s, it) => s + (it.qty || 0), 0)} item(s)
             </Text>

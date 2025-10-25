@@ -66,6 +66,9 @@ export default function AddPage() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
       <div className="bg-white p-6 rounded-lg shadow-md">
+        <h1 className='text-red-500'>1. Upload image on admin.chaicafeteria.com/images folder</h1>
+        <h1 className='text-red-500'>2. Copy the image URL and paste it below</h1>
+        <h3 className='text-red-500'>Sample http://admin.chaicafeteria.com/images/menu_pizza.webp (change the format as needed)</h3>
         <h2 className="text-xl font-semibold mb-4 text-gray-800">Add New Category</h2>
         <form onSubmit={addCategory} className="space-y-4">
           <input className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Category Name (e.g., Pizza)" value={name} onChange={e => setName(e.target.value)} required />

@@ -3,25 +3,29 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, ActivityIndicator, FlatList, Pressable, Animated, Easing } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
+import { router } from 'expo-router';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
 
 export default function OrdersScreen() {
   const { userToken } = useAuth();
+  const { addItemsBatch } = useCart() || {};
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
   const insets = useSafeAreaInsets();
 
   const statusStyle = useMemo(() => ({
-    'Order Placed': { bg: 'bg-gray-100', text: 'text-gray-700' },
-    'Packing': { bg: 'bg-blue-100', text: 'text-blue-700' },
-    'Shipped': { bg: 'bg-indigo-100', text: 'text-indigo-700' },
-    'Out for delivery': { bg: 'bg-amber-100', text: 'text-amber-700' },
-    'Delivered': { bg: 'bg-green-100', text: 'text-green-700' },
-    'Cancelled': { bg: 'bg-red-100', text: 'text-red-700' },
+    'Order Placed': { bg: 'bg-[#FFF3E9]', text: 'text-chai-primary' },
+    'Packing': { bg: 'bg-[#FFF3E9]', text: 'text-chai-primary' },
+    'Shipped': { bg: 'bg-[#FFF3E9]', text: 'text-chai-primary' },
+    'Out for delivery': { bg: 'bg-[#FFF3E9]', text: 'text-chai-primary' },
+    'Delivered': { bg: 'bg-[#E9F5EC]', text: 'text-chai-success' },
+    'Cancelled': { bg: 'bg-[#FBEAEA]', text: 'text-chai-error' },
   }), []);
 
   const fetchOrders = useCallback(async () => {
@@ -82,7 +86,7 @@ export default function OrdersScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white">
+      <SafeAreaView className="flex-1 items-center justify-center bg-chai-bg">
         <ActivityIndicator />
       </SafeAreaView>
     );
@@ -90,17 +94,17 @@ export default function OrdersScreen() {
 
   if (!orders || orders.length === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white">
+      <SafeAreaView className="flex-1 items-center justify-center bg-chai-bg">
         <Text className="text-lg text-gray-500" numberOfLines={1} ellipsizeMode="tail">You have no orders yet</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F9FAFB] pt-4" style={{ paddingBottom: Math.max(16, insets.bottom + 16) }}>
+    <SafeAreaView className="flex-1 bg-chai-bg pt-4 mt-4" style={{ paddingBottom: Math.max(16, insets.bottom + 16) }}>
       <View className="px-4 pb-2 flex-row items-center">
-        <Text className="text-xl font-bold mr-2 flex-1" numberOfLines={1}>My Orders</Text>
-        <Pressable onPress={fetchOrders} className="flex-row items-center gap-1 px-3 py-2 bg-orange-500 rounded-full">
+        <Text className="text-2xl font-bold ml-2 mr-2 flex-1 text-chai-text-primary" numberOfLines={1}>My Orders</Text>
+        <Pressable onPress={fetchOrders} className="flex-row items-center gap-1 px-3 py-2 bg-chai-primary rounded-full">
           <Ionicons name="refresh" size={16} color="#fff" />
           <Text className="text-white font-medium">Refresh</Text>
         </Pressable>
@@ -109,9 +113,9 @@ export default function OrdersScreen() {
         data={orders}
         keyExtractor={o => o._id || String(o.id)}
         renderItem={({ item }) => (
-          <View className="bg-white p-4 rounded-lg mx-4 mb-3 border border-gray-100">
+          <View className="bg-white p-4 rounded-lg mx-4 mb-3 border border-chai-divider">
             <View className="flex-row justify-between items-center mb-1">
-              <Text className="font-bold">Order ID: {item._id || item.id}</Text>
+              <Text className="font-bold text-chai-text-primary">Order ID: {item._id || item.id}</Text>
               {(() => {
                 const s = item.status || 'Order Placed';
                 const sty = statusStyle[s] || statusStyle['Order Placed'];
@@ -123,23 +127,23 @@ export default function OrdersScreen() {
               })()}
             </View>
             <StatusProgress status={item.status} />
-            <Text className="text-sm text-gray-600 mb-2">Payment: {item.paymentMethod || '—'}</Text>
+            <Text className="text-sm text-chai-text-secondary mb-2">Payment: {item.paymentMethod || '—'}</Text>
             <View className="mt-1">
               {(item.items || []).map((it, idx) => (
-                <Text key={(it._id || it.id || idx) + ''} className="text-sm text-gray-700">• {it.name} x {it.qty || it.quantity || 1}</Text>
+                <Text key={(it._id || it.id || idx) + ''} className="text-sm text-chai-text-primary">• {it.name} x {it.qty || it.quantity || 1}</Text>
               ))}
             </View>
             {(item.couponCode || item.discount) && (
               <View className="mt-2 flex-row justify-between">
-                <Text className="text-sm text-gray-600">Coupon {item.couponCode ? `(${item.couponCode})` : ''}</Text>
+                <Text className="text-sm text-chai-text-secondary">Coupon {item.couponCode ? `(${item.couponCode})` : ''}</Text>
                 {Number(item.discount || 0) > 0 && (
-                  <Text className="text-sm text-green-700">−₹{Number(item.discount).toFixed(2)}</Text>
+                  <Text className="text-sm text-chai-success">−₹{Number(item.discount).toFixed(2)}</Text>
                 )}
               </View>
             )}
             <View className="flex-row justify-between mt-2">
-              <Text className="text-sm text-gray-600">Items: {(item.items || []).length}</Text>
-              <Text className="text-sm font-semibold">
+              <Text className="text-sm text-chai-text-secondary">Items: {(item.items || []).length}</Text>
+              <Text className="text-sm font-semibold text-chai-text-primary">
                 {(() => {
                   const subtotal = (item.items || []).reduce((s, it) => s + Number(it.price || 0) * Number(it.qty || it.quantity || 0), 0);
                   const total = Number.isFinite(Number(item.total)) && Number(item.total) > 0
@@ -149,6 +153,24 @@ export default function OrdersScreen() {
                 })()}
               </Text>
             </View>
+            {String(item.status).toLowerCase() === 'delivered' && (
+              <View className="mt-3">
+                <Pressable
+                  onPress={() => {
+                    try {
+                      addItemsBatch && addItemsBatch(item.items || []);
+                      Toast.show({ type: 'success', text1: 'Reordered', text2: 'Items added to cart', position: 'bottom' });
+                      router.push('/cart');
+                    } catch (e) {
+                      Toast.show({ type: 'error', text1: 'Failed to reorder', text2: String(e?.message || e) });
+                    }
+                  }}
+                  className="bg-chai-primary py-3 rounded-full items-center"
+                >
+                  <Text className="text-white font-semibold">Reorder</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         )}
       />

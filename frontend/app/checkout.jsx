@@ -110,115 +110,115 @@ export default function CheckoutScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" style={{ paddingTop: insets.top }}>
+    <SafeAreaView className="flex-1 bg-chai-bg" style={{ paddingTop: insets.top }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 140 }} showsVerticalScrollIndicator={false}>
-        <Text className="text-2xl font-bold mb-4">Checkout</Text>
+        <Text className="text-2xl font-bold mb-4 text-chai-text-primary">Checkout</Text>
 
         {/* Cart Summary */}
-        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-          <Text className="text-lg font-semibold mb-3">Your Items</Text>
+        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
+          <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Your Items</Text>
           {items.length === 0 ? (
-            <Text className="text-gray-500">Your cart is empty.</Text>
+            <Text className="text-chai-text-secondary">Your cart is empty.</Text>
           ) : (
             items.map(it => (
-              <View key={it._id} className="flex-row items-center justify-between py-2 border-b border-gray-100">
+              <View key={it._id} className="flex-row items-center justify-between py-2 border-b border-chai-divider/60">
                 <View style={{ flex: 1 }}>
-                  <Text className="font-medium" numberOfLines={1}>{it.name}</Text>
-                  <Text className="text-gray-600">₹{Number(it.price).toFixed(2)}</Text>
+                  <Text className="font-medium text-chai-text-primary" numberOfLines={1}>{it.name}</Text>
+                  <Text className="text-chai-text-secondary">₹{Number(it.price).toFixed(2)}</Text>
                 </View>
                 <QtyControl item={it} />
               </View>
             ))
           )}
           <View className="mt-3">
-            <View className="flex-row justify-between mb-1"><Text className="text-gray-600">Subtotal</Text><Text>₹{totals.subtotal.toFixed(2)}</Text></View>
+            <View className="flex-row justify-between mb-1"><Text className="text-chai-text-secondary">Subtotal</Text><Text className="text-chai-text-primary">₹{totals.subtotal.toFixed(2)}</Text></View>
             {type === 'Delivery' && (
-              <View className="flex-row justify-between mb-1"><Text className="text-gray-600">Delivery</Text><Text>₹{totals.delivery.toFixed(2)}</Text></View>
+              <View className="flex-row justify-between mb-1"><Text className="text-chai-text-secondary">Delivery</Text><Text className="text-chai-text-primary">₹{totals.delivery.toFixed(2)}</Text></View>
             )}
             {appliedCoupon && appliedCoupon.type !== 'freeship' && totals.discount > 0 && (
-              <View className="flex-row justify-between mb-1"><Text className="text-gray-600">Discount ({appliedCoupon.code})</Text><Text className="text-green-600">-₹{totals.discount.toFixed(2)}</Text></View>
+              <View className="flex-row justify-between mb-1"><Text className="text-chai-text-secondary">Discount ({appliedCoupon.code})</Text><Text className="text-chai-success">-₹{totals.discount.toFixed(2)}</Text></View>
             )}
             {appliedCoupon && appliedCoupon.type === 'freeship' && (
-              <View className="flex-row justify-between mb-1"><Text className="text-gray-600">Delivery Discount ({appliedCoupon.code})</Text><Text className="text-green-600">-₹20.00</Text></View>
+              <View className="flex-row justify-between mb-1"><Text className="text-chai-text-secondary">Delivery Discount ({appliedCoupon.code})</Text><Text className="text-chai-success">-₹20.00</Text></View>
             )}
             <View className="flex-row justify-between mt-2">
-              <Text className="font-semibold">Total</Text>
-              <Text className={`font-semibold ${appliedCoupon ? 'text-green-700' : ''}`}>₹{totals.total.toFixed(2)}</Text>
+              <Text className="font-semibold text-chai-text-primary">Total</Text>
+              <Text className={`font-semibold ${appliedCoupon ? 'text-chai-success' : 'text-chai-text-primary'}`}>₹{totals.total.toFixed(2)}</Text>
             </View>
           </View>
         </View>
 
         {/* Customer Info */}
-        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-          <Text className="text-lg font-semibold mb-3">Customer</Text>
-          <TextInput value={name} onChangeText={setName} placeholder="Full name" className="bg-gray-50 rounded-xl px-4 py-3 mb-3" />
-          <TextInput value={phone} onChangeText={setPhone} keyboardType="number-pad" maxLength={10} placeholder="Phone (10 digits)" className="bg-gray-50 rounded-xl px-4 py-3 mb-3" />
-          <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" placeholder="Email (optional)" className="bg-gray-50 rounded-xl px-4 py-3" />
+        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
+          <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Customer</Text>
+          <TextInput value={name} onChangeText={setName} placeholder="Full name" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+          <TextInput value={phone} onChangeText={setPhone} keyboardType="number-pad" maxLength={10} placeholder="Phone (10 digits)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+          <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" placeholder="Email (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
         </View>
 
         {/* Order Type */}
-        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-          <Text className="text-lg font-semibold mb-3">Order Type</Text>
-          <View className="flex-row bg-gray-100 rounded-xl p-1">
+        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
+          <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Order Type</Text>
+          <View className="flex-row bg-[#FFF3E9] rounded-xl p-1">
             {['Pickup', 'Delivery'].map(opt => (
-              <Pressable key={opt} onPress={() => setType(opt)} className={`flex-1 py-3 rounded-xl ${type === opt ? 'bg-orange-500' : ''}`}>
-                <Text className={`text-center font-medium ${type === opt ? 'text-white' : 'text-gray-700'}`}>{opt}</Text>
+              <Pressable key={opt} onPress={() => setType(opt)} className={`flex-1 py-3 rounded-xl ${type === opt ? 'bg-chai-primary' : ''}`}>
+                <Text className={`text-center font-medium ${type === opt ? 'text-white' : 'text-chai-text-primary'}`}>{opt}</Text>
               </Pressable>
             ))}
           </View>
         </View>
 
         {/* Coupon */}
-        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-          <Text className="text-lg font-semibold mb-3">Have a coupon?</Text>
+        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
+          <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Have a coupon?</Text>
           <View className="flex-row items-center">
             <TextInput
               value={couponCode}
               onChangeText={setCouponCode}
               placeholder="Enter code (e.g. CHAI10)"
               autoCapitalize="characters"
-              className="flex-1 bg-gray-50 rounded-xl px-4 py-3 mr-3"
+              className="flex-1 bg-white border border-chai-divider rounded-xl px-4 py-3 mr-3 text-chai-text-primary"
             />
             {appliedCoupon ? (
               <Pressable onPress={() => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(''); Toast.show({ type: 'info', text1: 'Coupon removed', position: 'bottom' }); }} className="px-4 py-3 rounded-xl bg-gray-200">
                 <Text className="font-medium text-gray-800">Remove</Text>
               </Pressable>
             ) : (
-              <Pressable onPress={applyCoupon} disabled={applyingCoupon} className={`px-4 py-3 rounded-xl ${applyingCoupon ? 'bg-orange-300' : 'bg-orange-500'}`}>
+              <Pressable onPress={applyCoupon} disabled={applyingCoupon} className={`px-4 py-3 rounded-xl ${applyingCoupon ? 'bg-chai-primary opacity-60' : 'bg-chai-primary'}`}>
                 <Text className="font-medium text-white">{applyingCoupon ? 'Applying...' : 'Apply'}</Text>
               </Pressable>
             )}
           </View>
           {!!couponMessage && (
-            <Text className={`mt-2 text-sm ${appliedCoupon ? 'text-green-700' : 'text-red-600'}`}>{couponMessage}</Text>
+            <Text className={`mt-2 text-sm ${appliedCoupon ? 'text-chai-success' : 'text-red-600'}`}>{couponMessage}</Text>
           )}
         </View>
 
         {/* Delivery Address */}
         {type === 'Delivery' && (
-          <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-            <Text className="text-lg font-semibold mb-3">Delivery Address</Text>
-            <TextInput value={address1} onChangeText={setAddress1} placeholder="Address line 1" className="bg-gray-50 rounded-xl px-4 py-3 mb-3" />
-            <TextInput value={address2} onChangeText={setAddress2} placeholder="Address line 2 (optional)" className="bg-gray-50 rounded-xl px-4 py-3 mb-3" />
-            <TextInput value={landmark} onChangeText={setLandmark} placeholder="Landmark (optional)" className="bg-gray-50 rounded-xl px-4 py-3 mb-3" />
-            <TextInput value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} placeholder="Pincode" className="bg-gray-50 rounded-xl px-4 py-3" />
+          <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
+            <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Delivery Address</Text>
+            <TextInput value={address1} onChangeText={setAddress1} placeholder="Address line 1" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+            <TextInput value={address2} onChangeText={setAddress2} placeholder="Address line 2 (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+            <TextInput value={landmark} onChangeText={setLandmark} placeholder="Landmark (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+            <TextInput value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} placeholder="Pincode" className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
           </View>
         )}
 
         {/* Payment */}
-        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-          <Text className="text-lg font-semibold mb-3">Payment Method</Text>
-          <View className="flex-row bg-gray-100 rounded-xl p-1">
+        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
+          <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Payment Method</Text>
+          <View className="flex-row bg-[#FFF3E9] rounded-xl p-1">
             {['Online Payment', 'COD'].map(opt => (
-              <Pressable key={opt} onPress={() => setPayment(opt)} className={`flex-1 py-3 rounded-xl ${payment === opt ? 'bg-orange-500' : ''}`}>
-                <Text className={`text-center font-medium ${payment === opt ? 'text-white' : 'text-gray-700'}`}>{opt}</Text>
+              <Pressable key={opt} onPress={() => setPayment(opt)} className={`flex-1 py-3 rounded-xl ${payment === opt ? 'bg-chai-primary' : ''}`}>
+                <Text className={`text-center font-medium ${payment === opt ? 'text-white' : 'text-chai-text-primary'}`}>{opt}</Text>
               </Pressable>
             ))}
           </View>
           {payment === 'Online Payment' && (
-            <Text className="mt-2 text-xs text-gray-500">Online payments will be enabled soon (Razorpay integration coming).</Text>
+            <Text className="mt-2 text-xs text-chai-text-secondary">Online payments will be enabled soon (Razorpay integration coming).</Text>
           )}
-          <TextInput value={note} onChangeText={setNote} placeholder="Add a note (optional)" className="mt-3 bg-gray-50 rounded-xl px-4 py-3" />
+          <TextInput value={note} onChangeText={setNote} placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
         </View>
       </ScrollView>
 
@@ -227,7 +227,7 @@ export default function CheckoutScreen() {
         <Pressable
           disabled={!canSubmit || submitting}
           onPress={placeOrder}
-          className={`py-4 rounded-full items-center ${!canSubmit || submitting ? 'bg-gray-300' : 'bg-orange-500'}`}
+          className={`py-4 rounded-full items-center ${!canSubmit || submitting ? 'bg-gray-300' : 'bg-chai-primary'}`}
         >
           <Text className="text-white font-semibold">{submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`}</Text>
         </Pressable>

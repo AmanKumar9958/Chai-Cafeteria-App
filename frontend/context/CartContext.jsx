@@ -54,10 +54,32 @@ export const CartProvider = ({ children }) => {
     setItems(prev => prev.map(p => p._id === itemId ? { ...p, qty } : p));
   };
 
+  // Add multiple items at once, preserving/incrementing quantities
+  const addItemsBatch = (incoming = []) => {
+    if (!Array.isArray(incoming) || incoming.length === 0) return;
+    setItems(prev => {
+      const byId = new Map(prev.map(p => [p._id, { ...p }]));
+      for (const it of incoming) {
+        if (!it) continue;
+        const id = it._id || it.id;
+        if (!id) continue;
+        const addQty = Math.max(1, Number(it.qty ?? it.quantity ?? 1) || 1);
+        const existing = byId.get(id);
+        if (existing) {
+          existing.qty = Math.max(1, Number(existing.qty || 0) + addQty);
+          byId.set(id, existing);
+        } else {
+          byId.set(id, { ...it, _id: id, qty: addQty });
+        }
+      }
+      return Array.from(byId.values());
+    });
+  };
+
   const clear = () => setItems([]);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQty, clear }}>
+    <CartContext.Provider value={{ items, addItem, addItemsBatch, removeItem, updateQty, clear }}>
       {children}
     </CartContext.Provider>
   );
