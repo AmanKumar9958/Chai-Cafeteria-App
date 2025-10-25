@@ -7,11 +7,37 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CartProvider } from '../context/CartContext';
 import * as SplashScreen from 'expo-splash-screen';
 import Toast from 'react-native-toast-message';
+import { registerForPushNotificationsAsync, sendPushTokenToBackend, scheduleRegularNotifications, subscribeForegroundNotification, subscribeNotificationResponse } from '../utils/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
 function MainLayout() {
   const { userToken, isLoading } = useAuth();
+  
+  useEffect(() => {
+    let unsubscribe = null;
+    let unsubscribeResponse = null;
+    const initNotifications = async () => {
+      if (!userToken) return;
+      const expoPushToken = await registerForPushNotificationsAsync();
+      if (expoPushToken) {
+        await sendPushTokenToBackend(expoPushToken, userToken);
+      }
+      await scheduleRegularNotifications(); // 2x per day default
+      // Optional: show a toast in foreground when notifications arrive
+      unsubscribe = subscribeForegroundNotification(() => {
+        Toast.show({ type: 'info', text1: 'New update', text2: 'Check your orders for latest status.' });
+      });
+      // When user taps a notification, navigate to Orders
+      unsubscribeResponse = subscribeNotificationResponse(() => {
+        try { router.push('/(tabs)/orders'); } catch {}
+      });
+    };
+    if (!isLoading && userToken) {
+      initNotifications();
+    }
+    return () => { if (unsubscribe) unsubscribe(); if (unsubscribeResponse) unsubscribeResponse(); };
+  }, [isLoading, userToken]);
 
   useEffect(() => {
     if (!isLoading) {
