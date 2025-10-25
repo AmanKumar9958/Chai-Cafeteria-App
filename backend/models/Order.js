@@ -17,6 +17,12 @@ const OrderSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // optional
     items: { type: [OrderItemSchema], required: true },
     total: { type: Number, required: true },
+    subtotal: { type: Number },
+    deliveryFee: { type: Number },
+    discount: { type: Number },
+    couponCode: { type: String },
+    orderType: { type: String, enum: ['Pickup', 'Delivery'] },
+    paymentMethod: { type: String },
     status: {
       type: String,
       enum: ['Order Placed', 'Packing', 'Shipped', 'Out for delivery', 'Delivered', 'Cancelled'],
@@ -26,6 +32,8 @@ const OrderSchema = new mongoose.Schema(
     phone: { type: String },
     address1: { type: String },
     address2: { type: String },
+    landmark: { type: String },
+    pincode: { type: String },
     notes: { type: String },
   },
   { timestamps: true }

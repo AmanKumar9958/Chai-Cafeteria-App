@@ -4,6 +4,7 @@ import { NavLink, Routes, Route, Navigate } from 'react-router-dom';
 import AddPage from './pages/AddPage';
 import ListPage from './pages/ListPage';
 import OrdersPage from './pages/OrdersPage';
+import CouponsPage from './pages/CouponsPage';
 
 const App = () => {
   return (
@@ -25,6 +26,9 @@ const App = () => {
             <NavLink to="/orders" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
               View Orders
             </NavLink>
+            <NavLink to="/coupons" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+              Coupons
+            </NavLink>
           </nav>
         </div>
       </header>
@@ -34,6 +38,7 @@ const App = () => {
           <Route path="/add" element={<AddPage />} />
           <Route path="/list" element={<ListPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/coupons" element={<CouponsPage />} />
           <Route path="*" element={<Navigate to="/add" replace />} />
         </Routes>
       </main>

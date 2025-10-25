@@ -83,11 +83,11 @@ export default function CartScreen() {
           <View className="mt-auto">
             <View className="flex-row justify-between items-center p-4">
               <Text className="font-bold">Total</Text>
-              <Text className="font-bold">₹{total}</Text>
+              <Text className="font-bold">₹{Number(total).toFixed(2)}</Text>
             </View>
 
             <View className="p-4">
-              <Pressable onPress={() => { /* checkout placeholder */ }} className="bg-[#C7A27C] p-4 rounded items-center">
+              <Pressable onPress={() => router.push('/checkout')} className="bg-[#C7A27C] p-4 rounded items-center">
                 <Text className="text-white font-bold">Checkout</Text>
               </Pressable>
 
