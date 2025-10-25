@@ -1,6 +1,6 @@
 import "../global.css"; // Import your global styles
 // frontend/app/_layout.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '../context/AuthContext';
@@ -8,11 +8,20 @@ import { CartProvider } from '../context/CartContext';
 import * as SplashScreen from 'expo-splash-screen';
 import Toast from 'react-native-toast-message';
 import { registerForPushNotificationsAsync, sendPushTokenToBackend, scheduleRegularNotifications, subscribeForegroundNotification, subscribeNotificationResponse } from '../utils/notifications';
+import CustomSplash from '../components/CustomSplash';
 
 SplashScreen.preventAutoHideAsync();
 
 function MainLayout() {
   const { userToken, isLoading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Hide native splash ASAP so we can show our custom splash with progress
+  useEffect(() => {
+    (async () => {
+      try { await SplashScreen.hideAsync(); } catch {}
+    })();
+  }, []);
   
   useEffect(() => {
     let unsubscribe = null;
@@ -41,7 +50,6 @@ function MainLayout() {
 
   useEffect(() => {
     if (!isLoading) {
-      SplashScreen.hideAsync();
       if (userToken) {
         router.replace('/(tabs)/home');
       } else {
@@ -51,12 +59,21 @@ function MainLayout() {
   }, [isLoading, userToken]);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="login" />
-      <Stack.Screen name="register" />
-      <Stack.Screen name="verify-otp" />
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="verify-otp" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+      {showSplash && (
+        <CustomSplash
+          visible={true}
+          ready={!isLoading}
+          onDone={() => setShowSplash(false)}
+        />
+      )}
+    </>
   );
 }
 
