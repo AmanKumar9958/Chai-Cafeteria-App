@@ -37,6 +37,7 @@ export default function OrdersPage() {
                 <div>
                   <strong className="text-gray-800">Order ID: {o._id || o.id}</strong>
                   <div className="text-sm text-gray-600">{(o.items || []).length} items • <span className="font-medium">₹{o.total || o.amount || 0}</span></div>
+                  <div className="mt-1 text-xs text-gray-500">Payment: {o.paymentMethod || 'N/A'}</div>
                 </div>
                 <div className="mt-2 sm:mt-0">
                   <select 
@@ -52,6 +53,19 @@ export default function OrdersPage() {
                   </select>
                 </div>
               </div>
+              {/* Customer details */}
+              <div className="mt-3 grid sm:grid-cols-2 gap-2 text-sm text-gray-700">
+                <div><span className="text-gray-500">Name:</span> {o.customerName || '—'}</div>
+                <div><span className="text-gray-500">Phone:</span> {o.phone || '—'}</div>
+                <div className="sm:col-span-2"><span className="text-gray-500">Address:</span> {[o.address1, o.address2, o.landmark].filter(Boolean).join(', ') || '—'}</div>
+                <div><span className="text-gray-500">Pincode:</span> {o.pincode || '—'}</div>
+              </div>
+              {/* Coupon details */}
+              {(o.couponCode || o.discount) && (
+                <div className="mt-2 text-sm">
+                  <span className="text-gray-500">Coupon:</span> {o.couponCode || '—'} {o.discount ? (<span className="text-green-700">(−₹{Number(o.discount).toFixed(2)})</span>) : null}
+                </div>
+              )}
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <h4 className="font-semibold text-sm text-gray-700 mb-1">Items:</h4>
                 {(o.items || []).map(it => (
