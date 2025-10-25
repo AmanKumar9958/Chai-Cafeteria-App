@@ -48,15 +48,7 @@ function MainLayout() {
     return () => { if (unsubscribe) unsubscribe(); if (unsubscribeResponse) unsubscribeResponse(); };
   }, [isLoading, userToken]);
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (userToken) {
-        router.replace('/(tabs)/home');
-      } else {
-        router.replace('/login');
-      }
-    }
-  }, [isLoading, userToken]);
+  // Navigation from root path is handled by app/index.jsx to avoid unmatched route
 
   return (
     <>

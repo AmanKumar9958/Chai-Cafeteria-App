@@ -46,12 +46,12 @@ export default function RegisterScreen() {
                         <Text className="text-chai-text-secondary mt-2 font-semibold">Create your account</Text>
                     </View>
 
-                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholder="Full Name" value={name} onChangeText={setName} autoCapitalize='words' />
-                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholder="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize='none' />
-                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholder="Address 1 (Home)" value={address1} onChangeText={setAddress1} />
-                    <TextInput className="bg-white border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary" placeholder="Address 2 (Work)" value={address2} onChangeText={setAddress2} />
+                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Full Name" value={name} onChangeText={setName} autoCapitalize='words' />
+                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize='none' />
+                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Address 1 (Home)" value={address1} onChangeText={setAddress1} />
+                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Address 2 (Work)" value={address2} onChangeText={setAddress2} />
 
                     <Pressable onPress={handleRegister} className="bg-chai-primary w-full p-4 rounded-xl items-center justify-center" disabled={isLoading}>
                         {isLoading ? (

@@ -112,6 +112,8 @@ export default function OrdersScreen() {
       <FlatList
         data={orders}
         keyExtractor={o => o._id || String(o.id)}
+        contentContainerStyle={{ paddingBottom: Math.max(32, insets.bottom + 100) }}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View className="bg-white p-4 rounded-lg mx-4 mb-3 border border-chai-divider">
             <View className="flex-row justify-between items-center mb-1">

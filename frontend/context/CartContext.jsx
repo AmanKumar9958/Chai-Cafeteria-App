@@ -58,18 +58,24 @@ export const CartProvider = ({ children }) => {
   const addItemsBatch = (incoming = []) => {
     if (!Array.isArray(incoming) || incoming.length === 0) return;
     setItems(prev => {
-      const byId = new Map(prev.map(p => [p._id, { ...p }]));
+      const byId = new Map(prev.map(p => [String(p._id), { ...p }]));
       for (const it of incoming) {
         if (!it) continue;
-        const id = it._id || it.id;
-        if (!id) continue;
+        const idRaw = it._id ?? it.id ?? it.itemId ?? it.productId ?? it.menuItemId ?? it.sku ?? it.code ?? null;
+        const id = idRaw ? String(idRaw) : `${String(it.name || 'item')}-${String(it.price ?? '')}`; // final fallback to name-price
         const addQty = Math.max(1, Number(it.qty ?? it.quantity ?? 1) || 1);
         const existing = byId.get(id);
         if (existing) {
           existing.qty = Math.max(1, Number(existing.qty || 0) + addQty);
           byId.set(id, existing);
         } else {
-          byId.set(id, { ...it, _id: id, qty: addQty });
+          byId.set(id, {
+            _id: id,
+            name: it.name ?? it.title ?? 'Item',
+            price: Number(it.price ?? it.unitPrice ?? it.amount ?? 0),
+            imageURL: it.imageURL ?? it.image ?? undefined,
+            qty: addQty,
+          });
         }
       }
       return Array.from(byId.values());

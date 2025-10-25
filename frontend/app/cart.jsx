@@ -78,7 +78,7 @@ export default function CartScreen() {
         </View>
       ) : (
         <>
-          <FlatList data={itemsList} renderItem={renderItem} keyExtractor={i => i._id} />
+          <FlatList data={itemsList} renderItem={renderItem} keyExtractor={i => String(i._id)} />
           <View className="mt-auto">
             {/* Divider above total */}
             <View className="h-[1px] bg-chai-divider mx-4" />

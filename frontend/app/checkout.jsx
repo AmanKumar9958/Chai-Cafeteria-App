@@ -151,9 +151,9 @@ export default function CheckoutScreen() {
         {/* Customer Info */}
         <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
           <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Customer</Text>
-          <TextInput value={name} onChangeText={setName} placeholder="Full name" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-          <TextInput value={phone} onChangeText={setPhone} keyboardType="number-pad" maxLength={10} placeholder="Phone (10 digits)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-          <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" placeholder="Email (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
+          <TextInput value={name} onChangeText={setName} placeholderTextColor="#757575" placeholder="Full name" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+          <TextInput value={phone} onChangeText={setPhone} placeholderTextColor="#757575" keyboardType="number-pad" maxLength={10} placeholder="Phone (10 digits)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+          <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" placeholderTextColor="#757575" placeholder="Email (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
         </View>
 
         {/* Order Type */}
@@ -176,6 +176,7 @@ export default function CheckoutScreen() {
               value={couponCode}
               onChangeText={setCouponCode}
               placeholder="Enter code (e.g. CHAI10)"
+              placeholderTextColor="#757575"
               autoCapitalize="characters"
               className="flex-1 bg-white border border-chai-divider rounded-xl px-4 py-3 mr-3 text-chai-text-primary"
             />
@@ -198,10 +199,10 @@ export default function CheckoutScreen() {
         {type === 'Delivery' && (
           <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
             <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Delivery Address</Text>
-            <TextInput value={address1} onChangeText={setAddress1} placeholder="Address line 1" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-            <TextInput value={address2} onChangeText={setAddress2} placeholder="Address line 2 (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-            <TextInput value={landmark} onChangeText={setLandmark} placeholder="Landmark (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-            <TextInput value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} placeholder="Pincode" className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
+            <TextInput value={address1} onChangeText={setAddress1} placeholderTextColor="#757575" placeholder="Address line 1" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+            <TextInput value={address2} onChangeText={setAddress2} placeholderTextColor="#757575" placeholder="Address line 2 (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+            <TextInput value={landmark} onChangeText={setLandmark} placeholderTextColor="#757575" placeholder="Landmark (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
+            <TextInput value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} placeholderTextColor="#757575" placeholder="Pincode" className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
           </View>
         )}
 
@@ -218,7 +219,7 @@ export default function CheckoutScreen() {
           {payment === 'Online Payment' && (
             <Text className="mt-2 text-xs text-chai-text-secondary">Online payments will be enabled soon (Razorpay integration coming).</Text>
           )}
-          <TextInput value={note} onChangeText={setNote} placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
+          <TextInput value={note} onChangeText={setNote} placeholderTextColor="#757575" placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
         </View>
       </ScrollView>
 

@@ -225,6 +225,7 @@ export default function MenuScreen() {
                 value={query}
                 onChangeText={setQuery}
                 placeholder="Search items..."
+                placeholderTextColor="#757575"
                 className="flex-1 text-lg text-chai-text-primary"
                 clearButtonMode="while-editing"
               />

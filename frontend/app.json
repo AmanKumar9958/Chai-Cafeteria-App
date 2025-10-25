@@ -19,7 +19,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.chaicafeteriaranchi.frontend"
+      "package": "com.chaicafeteriaranchi.frontend",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",

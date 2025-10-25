@@ -29,16 +29,18 @@ export default function LoginScreen() {
         </View>
 
         <TextInput
-          className="bg-white border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
+          className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
           placeholder="Email Address"
+          placeholderTextColor="#757575"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
         <TextInput
-          className="bg-white border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary"
+          className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary"
           placeholder="Password"
+          placeholderTextColor="#757575"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
