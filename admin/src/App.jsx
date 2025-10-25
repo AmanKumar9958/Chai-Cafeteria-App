@@ -5,8 +5,17 @@ import AddPage from './pages/AddPage';
 import ListPage from './pages/ListPage';
 import OrdersPage from './pages/OrdersPage';
 import CouponsPage from './pages/CouponsPage';
+import LoginPage from './pages/LoginPage';
+import { useAuth } from './context/AuthContext';
+
+const Protected = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return children;
+};
 
 const App = () => {
+  const { isAuthenticated, logout } = useAuth();
   return (
     <div className="min-h-screen bg-gray-100">
       <Toaster position="top-right" />
@@ -17,29 +26,39 @@ const App = () => {
             <span className="sr-only">Chai Cafeteria Admin</span>
           </a>
           <nav className="flex items-center gap-2">
-            <NavLink to="/add" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
-              Add New
-            </NavLink>
-            <NavLink to="/list" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
-              Manage Menu
-            </NavLink>
-            <NavLink to="/orders" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
-              View Orders
-            </NavLink>
-            <NavLink to="/coupons" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
-              Coupons
-            </NavLink>
+            {isAuthenticated ? (
+              <>
+                <NavLink to="/add" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                  Add New
+                </NavLink>
+                <NavLink to="/list" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                  Manage Menu
+                </NavLink>
+                <NavLink to="/orders" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                  View Orders
+                </NavLink>
+                <NavLink to="/coupons" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                  Coupons
+                </NavLink>
+                <button onClick={logout} className="ml-2 px-3 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600">Logout</button>
+              </>
+            ) : (
+              <NavLink to="/login" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                Login
+              </NavLink>
+            )}
           </nav>
         </div>
       </header>
       <main className="max-w-6xl mx-auto px-4 py-6">
         <Routes>
           <Route path="/" element={<Navigate to="/add" replace />} />
-          <Route path="/add" element={<AddPage />} />
-          <Route path="/list" element={<ListPage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/coupons" element={<CouponsPage />} />
-          <Route path="*" element={<Navigate to="/add" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/add" element={<Protected><AddPage /></Protected>} />
+          <Route path="/list" element={<Protected><ListPage /></Protected>} />
+          <Route path="/orders" element={<Protected><OrdersPage /></Protected>} />
+          <Route path="/coupons" element={<Protected><CouponsPage /></Protected>} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </main>
     </div>
