@@ -65,6 +65,9 @@ export default function CheckoutScreen() {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [checkingDistance, setCheckingDistance] = useState(false);
+  const [distanceKm, setDistanceKm] = useState(null); // number | null
+  const [deliveryAllowed, setDeliveryAllowed] = useState(null); // boolean | null (unknown)
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, type, value, discount, freeDelivery }
   const [couponMessage, setCouponMessage] = useState('');
@@ -79,6 +82,8 @@ export default function CheckoutScreen() {
     return { subtotal, delivery, discount, total };
   }, [items, type, appliedCoupon]);
 
+  const DISABLE_DISTANCE_CHECK = String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '').toLowerCase() === 'true' || String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '') === '1';
+
   const canSubmit = useMemo(() => {
     if (items.length === 0) return false;
     if (!name.trim()) return false;
@@ -86,9 +91,80 @@ export default function CheckoutScreen() {
     if (type === 'Delivery') {
       if (!address1.trim()) return false;
       if (!/^[0-9]{4,6}$/.test(pincode)) return false;
+      // If we checked distance and it's not allowed, prevent submission
+      if (!DISABLE_DISTANCE_CHECK && deliveryAllowed === false) return false;
     }
     return true;
-  }, [items.length, name, phone, type, address1, pincode]);
+  }, [items.length, name, phone, type, address1, pincode, deliveryAllowed, DISABLE_DISTANCE_CHECK]);
+
+  // Cafe coordinates and radius (km)
+  const DELIVERY_RADIUS_KM = Number(process.env.EXPO_PUBLIC_DELIVERY_RADIUS_KM || 5);
+  const CAFE_LAT = Number(process.env.EXPO_PUBLIC_CAFE_LAT || 0);
+  const CAFE_LNG = Number(process.env.EXPO_PUBLIC_CAFE_LNG || 0);
+
+  const cafeCoordsAvailable = Number.isFinite(CAFE_LAT) && Number.isFinite(CAFE_LNG) && (CAFE_LAT !== 0 || CAFE_LNG !== 0);
+
+  const haversineKm = (lat1, lon1, lat2, lon2) => {
+    const toRad = (d) => (d * Math.PI) / 180;
+    const R = 6371; // Earth radius in km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const checkDeliveryEligibility = async () => {
+    if (String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '').toLowerCase() === 'true' || String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '') === '1') {
+      setDeliveryAllowed(true);
+      setDistanceKm(null);
+      Toast.show({ type: 'info', text1: 'Distance check bypassed', text2: 'EXPO_PUBLIC_DISABLE_DISTANCE_CHECK is enabled', position: 'bottom' });
+      return;
+    }
+    if (!cafeCoordsAvailable) {
+      Toast.show({ type: 'error', text1: 'Cafe location not set', text2: 'Set EXPO_PUBLIC_CAFE_LAT/LNG in your env', position: 'bottom' });
+      return;
+    }
+    setCheckingDistance(true);
+    try {
+      // Dynamically import to avoid route evaluation failure if native module isn't built yet
+      const LocMod = await import('expo-location');
+      const Loc = (LocMod && LocMod.default) ? LocMod.default : LocMod; // support both CJS/ESM shapes
+      const permFn = Loc.requestForegroundPermissionsAsync || Loc.requestPermissionsAsync;
+      if (typeof permFn !== 'function') {
+        throw new Error('Location module not fully available. Rebuild the Dev Client after installing expo-location.');
+      }
+      const { status } = await permFn();
+      if (status !== 'granted') {
+        Toast.show({ type: 'error', text1: 'Location permission required', text2: 'Enable location to check delivery eligibility', position: 'bottom' });
+        setDeliveryAllowed(null);
+        return;
+      }
+      const accuracy = (Loc.Accuracy && Loc.Accuracy.Balanced) ? Loc.Accuracy.Balanced : undefined;
+      const pos = await Loc.getCurrentPositionAsync({ accuracy });
+      const userLat = pos?.coords?.latitude;
+      const userLng = pos?.coords?.longitude;
+      if (!Number.isFinite(userLat) || !Number.isFinite(userLng)) throw new Error('Unable to read current location');
+      const km = haversineKm(userLat, userLng, CAFE_LAT, CAFE_LNG);
+      setDistanceKm(km);
+      const allowed = km <= DELIVERY_RADIUS_KM;
+      setDeliveryAllowed(allowed);
+      if (!allowed) {
+        // Force to Pickup + Online Payment only
+        setType('Pickup');
+        setPayment('Online Payment');
+        Toast.show({ type: 'info', text1: `You are ${km.toFixed(1)} km away`, text2: 'Delivery unavailable. Pickup with advance payment only.', position: 'bottom' });
+      } else {
+        Toast.show({ type: 'success', text1: `You are ${km.toFixed(1)} km away`, text2: 'Delivery available with COD or Online Payment', position: 'bottom' });
+      }
+    } catch (err) {
+      console.error('Distance check failed', err?.message || err);
+      Toast.show({ type: 'error', text1: 'Could not check distance', text2: String(err?.message || 'Try again.'), position: 'bottom' });
+      setDeliveryAllowed(null);
+    } finally {
+      setCheckingDistance(false);
+    }
+  };
 
   const placeOrder = async () => {
     if (!canSubmit) return;
@@ -293,11 +369,24 @@ export default function CheckoutScreen() {
         <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
           <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Order Type</Text>
           <View className="flex-row bg-[#FFF3E9] rounded-xl p-1">
-            {['Pickup', 'Delivery'].map(opt => (
-              <Pressable key={opt} onPress={() => setType(opt)} className={`flex-1 py-3 rounded-xl ${type === opt ? 'bg-chai-primary' : ''}`}>
+            {['Pickup', 'Delivery'].map(opt => {
+              const disabled = opt === 'Delivery' && deliveryAllowed === false;
+              return (
+              <Pressable key={opt} onPress={() => { if (disabled) return; setType(opt); if (opt==='Delivery') checkDeliveryEligibility(); }} className={`flex-1 py-3 rounded-xl ${type === opt ? 'bg-chai-primary' : ''} ${disabled ? 'opacity-40' : ''}`}>
                 <Text className={`text-center font-medium ${type === opt ? 'text-white' : 'text-chai-text-primary'}`}>{opt}</Text>
               </Pressable>
-            ))}
+            );})}
+          </View>
+          <View className="mt-2">
+            {deliveryAllowed === false && (
+              <Text className="text-xs text-red-600">Outside {DELIVERY_RADIUS_KM} km radius. Delivery disabled; Pickup with advance payment only.</Text>
+            )}
+            {deliveryAllowed === true && (
+              <Text className="text-xs text-chai-success">Within {DELIVERY_RADIUS_KM} km radius. Delivery available.</Text>
+            )}
+            {deliveryAllowed === null && (
+              <Text className="text-xs text-chai-text-secondary">Tap Delivery to check eligibility based on your current location.</Text>
+            )}
           </View>
         </View>
 
@@ -336,6 +425,12 @@ export default function CheckoutScreen() {
             <TextInput value={address2} onChangeText={setAddress2} placeholderTextColor="#757575" placeholder="Address line 2 (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
             <TextInput value={landmark} onChangeText={setLandmark} placeholderTextColor="#757575" placeholder="Landmark (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
             <TextInput value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} placeholderTextColor="#757575" placeholder="Pincode" className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
+            <Pressable onPress={checkDeliveryEligibility} disabled={checkingDistance} className={`mt-3 px-4 py-3 rounded-xl ${checkingDistance ? 'bg-gray-300' : 'bg-chai-primary'}`}>
+              <Text className="text-white font-medium">{checkingDistance ? 'Checking distance…' : 'Check delivery eligibility'}</Text>
+            </Pressable>
+            {Number.isFinite(distanceKm) && (
+              <Text className="mt-2 text-xs text-chai-text-secondary">You are approximately {distanceKm.toFixed(2)} km from the cafe.</Text>
+            )}
           </View>
         )}
 
@@ -343,14 +438,23 @@ export default function CheckoutScreen() {
         <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
           <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Payment Method</Text>
           <View className="flex-row bg-[#FFF3E9] rounded-xl p-1">
-            {['Online Payment', 'COD'].map(opt => (
-              <Pressable key={opt} onPress={() => setPayment(opt)} className={`flex-1 py-3 rounded-xl ${payment === opt ? 'bg-chai-primary' : ''}`}>
-                <Text className={`text-center font-medium ${payment === opt ? 'text-white' : 'text-chai-text-primary'}`}>{opt}</Text>
-              </Pressable>
-            ))}
+            {['Online Payment', 'COD'].map(opt => {
+              const codDisabled = (deliveryAllowed === false) || (type === 'Delivery' && deliveryAllowed === false) || (type === 'Pickup' && deliveryAllowed === false);
+              const disabled = (opt === 'COD') && codDisabled;
+              const hidden = (opt === 'COD') && codDisabled; // hide COD when out of radius
+              if (hidden) return null;
+              return (
+                <Pressable key={opt} onPress={() => !disabled && setPayment(opt)} className={`flex-1 py-3 rounded-xl ${payment === opt ? 'bg-chai-primary' : ''} ${disabled ? 'opacity-40' : ''}`}>
+                  <Text className={`text-center font-medium ${payment === opt ? 'text-white' : 'text-chai-text-primary'}`}>{opt}</Text>
+                </Pressable>
+              );
+            })}
           </View>
           {payment === 'Online Payment' && (
             <Text className="mt-2 text-xs text-chai-text-secondary">You&apos;ll be redirected to Razorpay to complete payment securely.</Text>
+          )}
+          {payment === 'COD' && deliveryAllowed === false && (
+            <Text className="mt-2 text-xs text-red-600">COD is not available outside the {DELIVERY_RADIUS_KM} km radius.</Text>
           )}
           <TextInput value={note} onChangeText={setNote} placeholderTextColor="#757575" placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
         </View>
@@ -363,7 +467,7 @@ export default function CheckoutScreen() {
           onPress={placeOrder}
           className={`py-4 rounded-full items-center ${!canSubmit || submitting || paying ? 'bg-gray-300' : 'bg-chai-primary'}`}
         >
-          <Text className="text-white font-semibold">{paying ? 'Processing payment…' : (submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`)}</Text>
+              <Text className="text-white font-semibold">{paying ? 'Processing payment…' : (submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`)}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
