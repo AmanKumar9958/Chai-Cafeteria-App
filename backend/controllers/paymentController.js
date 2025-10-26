@@ -20,13 +20,19 @@ exports.createRazorpayOrder = async (req, res) => {
     if (!amt || !Number.isInteger(amt) || amt <= 0) {
       return res.status(400).json({ message: 'Invalid amount (paise integer required)' });
     }
+    if (amt < 100) {
+      return res.status(400).json({ message: 'Minimum order amount is 100 paise (₹1)' });
+    }
 
     const instance = new Razorpay({ key_id: keyId, key_secret: keySecret });
     const order = await instance.orders.create({ amount: amt, currency, receipt, notes });
     return res.json({ orderId: order.id, amount: order.amount, currency: order.currency });
   } catch (err) {
-    const status = err.status || 500;
-    return res.status(status).json({ message: err.message || 'Failed to create order' });
+    const status = err.status || err.statusCode || 500;
+    const message = (err && (err.message || err?.error?.description)) || 'Failed to create order';
+    // Log server-side for diagnosis (does not leak secrets)
+    console.error('Razorpay create-order error:', err?.error || err);
+    return res.status(status).json({ message });
   }
 };
 
@@ -47,7 +53,9 @@ exports.verifyRazorpayPayment = async (req, res) => {
     if (!success) return res.status(400).json({ success: false, message: 'Invalid signature' });
     return res.json({ success: true });
   } catch (err) {
-    const status = err.status || 500;
-    return res.status(status).json({ success: false, message: err.message || 'Verification failed' });
+    const status = err.status || err.statusCode || 500;
+    const message = (err && (err.message || err?.error?.description)) || 'Verification failed';
+    console.error('Razorpay verify error:', err?.error || err);
+    return res.status(status).json({ success: false, message });
   }
 };
