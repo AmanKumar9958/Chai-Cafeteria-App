@@ -28,7 +28,17 @@ app.use('/api/menu', require('./routes/menuRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 // Coupons routes
 app.use('/api/coupons', require('./routes/couponRoutes'));
+// Payments routes (Razorpay)
+app.use('/api/payments', require('./routes/paymentRoutes'));
 
 // We will add our auth and menu routes here later
+
+// Health endpoint to be used by render uptime
+app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+// JSON 404 fallback to avoid HTML error pages
+app.use((req, res) => {
+  res.status(404).json({ message: 'Not Found' });
+});
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -5,9 +5,49 @@ import { useCart } from '../context/CartContext';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { router } from 'expo-router';
+import { openRazorpayCheckout } from '../utils/razorpay';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
 const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api';
+// Ensure Razorpay key is clean if .env value is quoted
+const RZP_KEY = (process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || '').replace(/^['"]|['"]$/g, '');
+// Optional env overrides for backend paths (relative like "/payments/razorpay/create-order" or absolute "https://host/api/...")
+const RZP_CREATE_PATH = (process.env.EXPO_PUBLIC_RAZORPAY_CREATE_PATH || '').trim();
+const RZP_VERIFY_PATH = (process.env.EXPO_PUBLIC_RAZORPAY_VERIFY_PATH || '').trim();
+
+// Helper to POST JSON with fallback paths (handles servers that mount different prefixes)
+async function postJsonWithFallback(relativePaths, body) {
+  let lastErr;
+  const tried = [];
+  for (const rel of relativePaths) {
+    const isAbsolute = /^https?:\/\//i.test(rel);
+    const url = isAbsolute ? rel : `${API_URL}${rel.startsWith('/') ? rel : `/${rel}`}`;
+    tried.push(url);
+    try {
+      const res = await axios.post(url, body, { headers: { 'Content-Type': 'application/json' } });
+      const contentType = String(res?.headers?.['content-type'] || '');
+      if (contentType.includes('text/html')) {
+        // Not a JSON API (likely 404 HTML). Try next fallback
+        lastErr = new Error(`Unexpected HTML from ${url}`);
+        continue;
+      }
+      return res;
+    } catch (err) {
+      // Save and continue to next path on 404/405/Not Found patterns
+      const status = err?.response?.status || 0;
+      const dataText = typeof err?.response?.data === 'string' ? err.response.data : '';
+      const looksNotFound = status === 404 || status === 405 || /Cannot (GET|POST)/i.test(dataText || '');
+      lastErr = err;
+      if (looksNotFound) continue;
+      // Other errors (500, CORS, network) – stop early
+      break;
+    }
+  }
+  const suffix = tried.length ? ` Tried: ${tried.join(', ')}` : '';
+  const baseErr = lastErr || new Error('Request failed');
+  baseErr.message = `${baseErr.message}${suffix}`;
+  throw baseErr;
+}
 
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
@@ -24,6 +64,7 @@ export default function CheckoutScreen() {
   const [payment, setPayment] = useState('COD'); // 'Online Payment' | 'COD'
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [paying, setPaying] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, type, value, discount, freeDelivery }
   const [couponMessage, setCouponMessage] = useState('');
@@ -51,6 +92,10 @@ export default function CheckoutScreen() {
 
   const placeOrder = async () => {
     if (!canSubmit) return;
+    // If online payment, run Razorpay flow first, then place order with payment details
+    if (payment === 'Online Payment') {
+      return handleOnlinePaymentAndPlaceOrder();
+    }
     setSubmitting(true);
     try {
       const payload = {
@@ -71,6 +116,94 @@ export default function CheckoutScreen() {
       console.error('Order failed', e?.response?.data || e?.message || e);
       Toast.show({ type: 'error', text1: 'Failed to place order', text2: 'Please try again.', position: 'bottom' });
     } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOnlinePaymentAndPlaceOrder = async () => {
+    setPaying(true);
+    try {
+      // 1) Create Razorpay order on backend (amount in paise)
+      const amountPaise = Math.round(totals.total * 100);
+      if (!RZP_KEY) {
+        Toast.show({ type: 'error', text1: 'Razorpay key missing', text2: 'Set EXPO_PUBLIC_RAZORPAY_KEY_ID in your env', position: 'bottom' });
+        setPaying(false);
+        return;
+      }
+      const createRes = await postJsonWithFallback(
+        [
+          RZP_CREATE_PATH,
+          '/payments/razorpay/create-order',
+          '/payment/razorpay/create-order',
+          '/razorpay/create-order',
+        ].filter(Boolean),
+        {
+          amount: amountPaise,
+          currency: 'INR',
+          receipt: `rcpt_${Date.now()}`,
+          notes: { customer: name || '', phone, type },
+        }
+      );
+      const { orderId } = createRes.data || {};
+      if (!orderId) throw new Error('No orderId returned by backend');
+
+      // 2) Open Razorpay checkout UI
+      const paymentRes = await openRazorpayCheckout({
+        key: RZP_KEY,
+        amount: amountPaise,
+        orderId,
+        name: 'Chai Cafeteria',
+        description: 'Order payment',
+        prefill: { name, contact: phone, email },
+        notes: { cartItems: String(items.length) },
+      });
+
+      // 3) Verify signature with backend
+      const verifyRes = await postJsonWithFallback(
+        [
+          RZP_VERIFY_PATH,
+          '/payments/razorpay/verify',
+          '/payment/razorpay/verify',
+          '/razorpay/verify',
+        ].filter(Boolean),
+        paymentRes
+      );
+      if (!verifyRes.data?.success) throw new Error('Payment verification failed');
+
+      // 4) Place order with payment details
+      setSubmitting(true);
+      const payload = {
+        customer: { name, phone, email },
+        type,
+        address: type === 'Delivery' ? { address1, address2, landmark, pincode } : null,
+        paymentMethod: 'Online Payment',
+        paymentDetails: {
+          provider: 'razorpay',
+          orderId: paymentRes?.razorpay_order_id,
+          paymentId: paymentRes?.razorpay_payment_id,
+          signature: paymentRes?.razorpay_signature,
+        },
+        note,
+        couponCode: appliedCoupon?.code || null,
+        items: items.map(it => ({ itemId: it._id, name: it.name, price: Number(it.price), qty: it.qty })),
+        totals,
+      };
+      await axios.post(`${API_URL}/orders`, payload);
+      Toast.show({ type: 'success', text1: 'Payment successful', text2: 'Order placed!', position: 'bottom' });
+      clear();
+      router.replace('/(tabs)/orders');
+    } catch (e) {
+      const status = e?.response?.status;
+      const data = e?.response?.data;
+      const msg = typeof data === 'string' ? data : (data?.message || e?.message);
+      console.error('Online payment failed', data || msg || e);
+      // Make the common route-missing case more readable to users
+      const friendly = /Cannot (GET|POST)/i.test(String(msg)) || status === 404 || status === 405
+        ? 'Payment API route not found on server. Please deploy the Razorpay endpoints.'
+        : (msg || 'Please try again.');
+      Toast.show({ type: 'error', text1: 'Payment failed', text2: friendly, position: 'bottom' });
+    } finally {
+      setPaying(false);
       setSubmitting(false);
     }
   };
@@ -217,7 +350,7 @@ export default function CheckoutScreen() {
             ))}
           </View>
           {payment === 'Online Payment' && (
-            <Text className="mt-2 text-xs text-chai-text-secondary">Online payments will be enabled soon (Razorpay integration coming).</Text>
+            <Text className="mt-2 text-xs text-chai-text-secondary">You&apos;ll be redirected to Razorpay to complete payment securely.</Text>
           )}
           <TextInput value={note} onChangeText={setNote} placeholderTextColor="#757575" placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
         </View>
@@ -226,11 +359,11 @@ export default function CheckoutScreen() {
       {/* Submit bar */}
       <View style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 16 }}>
         <Pressable
-          disabled={!canSubmit || submitting}
+          disabled={!canSubmit || submitting || paying}
           onPress={placeOrder}
-          className={`py-4 rounded-full items-center ${!canSubmit || submitting ? 'bg-gray-300' : 'bg-chai-primary'}`}
+          className={`py-4 rounded-full items-center ${!canSubmit || submitting || paying ? 'bg-gray-300' : 'bg-chai-primary'}`}
         >
-          <Text className="text-white font-semibold">{submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`}</Text>
+          <Text className="text-white font-semibold">{paying ? 'Processing payment…' : (submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`)}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
