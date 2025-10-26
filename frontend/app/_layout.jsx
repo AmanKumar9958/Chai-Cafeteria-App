@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CartProvider } from '../context/CartContext';
 import * as SplashScreen from 'expo-splash-screen';
-import Toast from 'react-native-toast-message';
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { registerForPushNotificationsAsync, sendPushTokenToBackend, scheduleRegularNotifications, subscribeForegroundNotification, subscribeNotificationResponse } from '../utils/notifications';
 import CustomSplash from '../components/CustomSplash';
 
@@ -69,12 +69,41 @@ function MainLayout() {
 }
 
 export default function RootLayout() {
+  // Stylish toast config with brand colors and top positioning by default
+  const toastConfig = {
+    success: (props) => (
+      <BaseToast
+        {...props}
+        style={{ borderLeftColor: '#16a34a', backgroundColor: '#F0FDF4', borderRadius: 14 }}
+        contentContainerStyle={{ paddingHorizontal: 15 }}
+        text1Style={{ fontSize: 16, fontWeight: '700', color: '#065F46' }}
+        text2Style={{ fontSize: 13, color: '#065F46' }}
+      />
+    ),
+    error: (props) => (
+      <ErrorToast
+        {...props}
+        style={{ borderLeftColor: '#dc2626', backgroundColor: '#FEF2F2', borderRadius: 14 }}
+        text1Style={{ fontSize: 16, fontWeight: '700', color: '#7F1D1D' }}
+        text2Style={{ fontSize: 13, color: '#7F1D1D' }}
+      />
+    ),
+    info: (props) => (
+      <BaseToast
+        {...props}
+        style={{ borderLeftColor: '#2563eb', backgroundColor: '#EFF6FF', borderRadius: 14 }}
+        contentContainerStyle={{ paddingHorizontal: 15 }}
+        text1Style={{ fontSize: 16, fontWeight: '700', color: '#1E3A8A' }}
+        text2Style={{ fontSize: 13, color: '#1E3A8A' }}
+      />
+    ),
+  };
   return (
     <AuthProvider>
       <CartProvider>
         <StatusBar style="dark" backgroundColor="#FFFFFF" />
         <MainLayout />
-        <Toast />
+        <Toast position="top" topOffset={60} config={toastConfig} />
       </CartProvider>
     </AuthProvider>
   );

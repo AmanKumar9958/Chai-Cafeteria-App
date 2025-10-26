@@ -41,7 +41,16 @@ export default function VerifyOtpScreen() {
         <SafeAreaView className="flex-1 bg-[#F9FAFB] justify-center p-8">
             <Text className="text-3xl font-bold mb-2 text-center">Verify Your Email</Text>
             <Text className="text-gray-500 mb-8 text-center">An OTP has been sent to {email}</Text>
-            <TextInput className="bg-gray-100 p-4 rounded-lg mb-6 text-lg text-center" placeholder="Enter 6-digit OTP" value={otp} onChangeText={setOtp} keyboardType="number-pad" maxLength={6} />
+            <TextInput
+                className="bg-gray-100 p-4 rounded-lg mb-6 text-lg text-center"
+                placeholder="Enter 6-digit OTP"
+                value={otp}
+                onChangeText={(t) => { setOtp(t); if (t?.length === 6 && !isLoading) { handleVerify(); } }}
+                keyboardType="number-pad"
+                maxLength={6}
+                returnKeyType="done"
+                onSubmitEditing={handleVerify}
+            />
             <Pressable onPress={handleVerify} className="bg-[#C7A27C] p-4 rounded-lg items-center" disabled={isLoading}>
                 {isLoading ? <ActivityIndicator color="white" /> : <Text className="text-white text-lg font-bold">Verify</Text>}
             </Pressable>

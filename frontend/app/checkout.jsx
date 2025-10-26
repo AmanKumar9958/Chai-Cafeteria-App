@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
+import React, { useMemo, useState, useRef } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '../context/CartContext';
 import axios from 'axios';
@@ -68,6 +68,7 @@ export default function CheckoutScreen() {
   const [checkingDistance, setCheckingDistance] = useState(false);
   const [distanceKm, setDistanceKm] = useState(null); // number | null
   const [deliveryAllowed, setDeliveryAllowed] = useState(null); // boolean | null (unknown)
+  const [showOutOfRadiusModal, setShowOutOfRadiusModal] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, type, value, discount, freeDelivery }
   const [couponMessage, setCouponMessage] = useState('');
@@ -118,11 +119,11 @@ export default function CheckoutScreen() {
     if (String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '').toLowerCase() === 'true' || String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '') === '1') {
       setDeliveryAllowed(true);
       setDistanceKm(null);
-      Toast.show({ type: 'info', text1: 'Distance check bypassed', text2: 'EXPO_PUBLIC_DISABLE_DISTANCE_CHECK is enabled', position: 'bottom' });
+      Toast.show({ type: 'info', text1: 'Distance check bypassed', text2: 'EXPO_PUBLIC_DISABLE_DISTANCE_CHECK is enabled' });
       return;
     }
     if (!cafeCoordsAvailable) {
-      Toast.show({ type: 'error', text1: 'Cafe location not set', text2: 'Set EXPO_PUBLIC_CAFE_LAT/LNG in your env', position: 'bottom' });
+      Toast.show({ type: 'error', text1: 'Cafe location not set', text2: 'Set EXPO_PUBLIC_CAFE_LAT/LNG in your env' });
       return;
     }
     setCheckingDistance(true);
@@ -136,7 +137,7 @@ export default function CheckoutScreen() {
       }
       const { status } = await permFn();
       if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Location permission required', text2: 'Enable location to check delivery eligibility', position: 'bottom' });
+        Toast.show({ type: 'error', text1: 'Location permission required', text2: 'Enable location to check delivery eligibility' });
         setDeliveryAllowed(null);
         return;
       }
@@ -153,13 +154,13 @@ export default function CheckoutScreen() {
         // Force to Pickup + Online Payment only
         setType('Pickup');
         setPayment('Online Payment');
-        Toast.show({ type: 'info', text1: `You are ${km.toFixed(1)} km away`, text2: 'Delivery unavailable. Pickup with advance payment only.', position: 'bottom' });
+        setShowOutOfRadiusModal(true);
       } else {
-        Toast.show({ type: 'success', text1: `You are ${km.toFixed(1)} km away`, text2: 'Delivery available with COD or Online Payment', position: 'bottom' });
+        Toast.show({ type: 'success', text1: `You are ${km.toFixed(1)} km away`, text2: 'Delivery available with COD or Online Payment' });
       }
     } catch (err) {
       console.error('Distance check failed', err?.message || err);
-      Toast.show({ type: 'error', text1: 'Could not check distance', text2: String(err?.message || 'Try again.'), position: 'bottom' });
+      Toast.show({ type: 'error', text1: 'Could not check distance', text2: String(err?.message || 'Try again.') });
       setDeliveryAllowed(null);
     } finally {
       setCheckingDistance(false);
@@ -185,12 +186,12 @@ export default function CheckoutScreen() {
         totals,
       };
       await axios.post(`${API_URL}/orders`, payload);
-      Toast.show({ type: 'success', text1: 'Order placed!', text2: "We'll get started right away.", position: 'bottom' });
+      Toast.show({ type: 'success', text1: 'Order placed!', text2: "We'll get started right away." });
       clear();
       router.replace('/(tabs)/orders');
     } catch (e) {
       console.error('Order failed', e?.response?.data || e?.message || e);
-      Toast.show({ type: 'error', text1: 'Failed to place order', text2: 'Please try again.', position: 'bottom' });
+      Toast.show({ type: 'error', text1: 'Failed to place order', text2: 'Please try again.' });
     } finally {
       setSubmitting(false);
     }
@@ -202,7 +203,7 @@ export default function CheckoutScreen() {
       // 1) Create Razorpay order on backend (amount in paise)
       const amountPaise = Math.round(totals.total * 100);
       if (!RZP_KEY) {
-        Toast.show({ type: 'error', text1: 'Razorpay key missing', text2: 'Set EXPO_PUBLIC_RAZORPAY_KEY_ID in your env', position: 'bottom' });
+        Toast.show({ type: 'error', text1: 'Razorpay key missing', text2: 'Set EXPO_PUBLIC_RAZORPAY_KEY_ID in your env' });
         setPaying(false);
         return;
       }
@@ -265,7 +266,7 @@ export default function CheckoutScreen() {
         totals,
       };
       await axios.post(`${API_URL}/orders`, payload);
-      Toast.show({ type: 'success', text1: 'Payment successful', text2: 'Order placed!', position: 'bottom' });
+      Toast.show({ type: 'success', text1: 'Payment successful', text2: 'Order placed!' });
       clear();
       router.replace('/(tabs)/orders');
     } catch (e) {
@@ -277,7 +278,7 @@ export default function CheckoutScreen() {
       const friendly = /Cannot (GET|POST)/i.test(String(msg)) || status === 404 || status === 405
         ? 'Payment API route not found on server. Please deploy the Razorpay endpoints.'
         : (msg || 'Please try again.');
-      Toast.show({ type: 'error', text1: 'Payment failed', text2: friendly, position: 'bottom' });
+      Toast.show({ type: 'error', text1: 'Payment failed', text2: friendly });
     } finally {
       setPaying(false);
       setSubmitting(false);
@@ -294,16 +295,16 @@ export default function CheckoutScreen() {
       if (data && data.valid) {
         setAppliedCoupon({ code: data.coupon.code, type: data.coupon.type, value: data.coupon.value, discount: data.discount || 0, freeDelivery: !!data.freeDelivery });
         setCouponMessage('Coupon applied');
-        Toast.show({ type: 'success', text1: 'Coupon applied', position: 'bottom' });
+        Toast.show({ type: 'success', text1: 'Coupon applied' });
       } else {
         setAppliedCoupon(null);
         setCouponMessage('Invalid coupon');
-        Toast.show({ type: 'error', text1: 'Invalid coupon', position: 'bottom' });
+        Toast.show({ type: 'error', text1: 'Invalid coupon' });
       }
     } catch (err) {
       setAppliedCoupon(null);
       setCouponMessage(err?.response?.data?.msg || 'Invalid coupon');
-      Toast.show({ type: 'error', text1: 'Invalid coupon', text2: err?.response?.data?.msg, position: 'bottom' });
+      Toast.show({ type: 'error', text1: 'Invalid coupon', text2: err?.response?.data?.msg });
     } finally {
       setApplyingCoupon(false);
     }
@@ -317,6 +318,15 @@ export default function CheckoutScreen() {
       <Pressable onPress={() => removeItem(item._id)} className="ml-3 px-3 py-1 rounded-full bg-red-100"><Text className="text-red-600 text-xs">Remove</Text></Pressable>
     </View>
   );
+
+  // Refs for auto-advancing between fields
+  const nameRef = useRef(null);
+  const phoneRef = useRef(null);
+  const emailRef = useRef(null);
+  const addr1Ref = useRef(null);
+  const addr2Ref = useRef(null);
+  const landmarkRef = useRef(null);
+  const pincodeRef = useRef(null);
 
   return (
     <SafeAreaView className="flex-1 bg-chai-bg" style={{ paddingTop: insets.top }}>
@@ -360,9 +370,41 @@ export default function CheckoutScreen() {
         {/* Customer Info */}
         <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
           <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Customer</Text>
-          <TextInput value={name} onChangeText={setName} placeholderTextColor="#757575" placeholder="Full name" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-          <TextInput value={phone} onChangeText={setPhone} placeholderTextColor="#757575" keyboardType="number-pad" maxLength={10} placeholder="Phone (10 digits)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-          <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" placeholderTextColor="#757575" placeholder="Email (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
+          <TextInput
+            ref={nameRef}
+            value={name}
+            onChangeText={setName}
+            placeholderTextColor="#757575"
+            placeholder="Full name"
+            className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary"
+            returnKeyType="next"
+            onSubmitEditing={() => phoneRef.current?.focus()}
+            blurOnSubmit={false}
+          />
+          <TextInput
+            ref={phoneRef}
+            value={phone}
+            onChangeText={(t) => { setPhone(t); if (t?.length === 10) { emailRef.current?.focus(); } }}
+            placeholderTextColor="#757575"
+            keyboardType="number-pad"
+            maxLength={10}
+            placeholder="Phone (10 digits)"
+            className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary"
+            returnKeyType="next"
+            onSubmitEditing={() => emailRef.current?.focus()}
+            blurOnSubmit={false}
+          />
+          <TextInput
+            ref={emailRef}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            placeholderTextColor="#757575"
+            placeholder="Email (optional)"
+            className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary"
+            returnKeyType="next"
+            onSubmitEditing={() => { if (type === 'Delivery') { addr1Ref.current?.focus(); } }}
+          />
         </View>
 
         {/* Order Type */}
@@ -421,10 +463,50 @@ export default function CheckoutScreen() {
         {type === 'Delivery' && (
           <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
             <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Delivery Address</Text>
-            <TextInput value={address1} onChangeText={setAddress1} placeholderTextColor="#757575" placeholder="Address line 1" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-            <TextInput value={address2} onChangeText={setAddress2} placeholderTextColor="#757575" placeholder="Address line 2 (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-            <TextInput value={landmark} onChangeText={setLandmark} placeholderTextColor="#757575" placeholder="Landmark (optional)" className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary" />
-            <TextInput value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} placeholderTextColor="#757575" placeholder="Pincode" className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
+            <TextInput
+              ref={addr1Ref}
+              value={address1}
+              onChangeText={setAddress1}
+              placeholderTextColor="#757575"
+              placeholder="Address line 1"
+              className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary"
+              returnKeyType="next"
+              onSubmitEditing={() => addr2Ref.current?.focus()}
+              blurOnSubmit={false}
+            />
+            <TextInput
+              ref={addr2Ref}
+              value={address2}
+              onChangeText={setAddress2}
+              placeholderTextColor="#757575"
+              placeholder="Address line 2 (optional)"
+              className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary"
+              returnKeyType="next"
+              onSubmitEditing={() => landmarkRef.current?.focus()}
+              blurOnSubmit={false}
+            />
+            <TextInput
+              ref={landmarkRef}
+              value={landmark}
+              onChangeText={setLandmark}
+              placeholderTextColor="#757575"
+              placeholder="Landmark (optional)"
+              className="bg-white border border-chai-divider rounded-xl px-4 py-3 mb-3 text-chai-text-primary"
+              returnKeyType="next"
+              onSubmitEditing={() => pincodeRef.current?.focus()}
+              blurOnSubmit={false}
+            />
+            <TextInput
+              ref={pincodeRef}
+              value={pincode}
+              onChangeText={(t) => { setPincode(t); if (t?.length === 6) { /* move focus to button area, no next input */ } }}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholderTextColor="#757575"
+              placeholder="Pincode"
+              className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary"
+              returnKeyType="done"
+            />
             <Pressable onPress={checkDeliveryEligibility} disabled={checkingDistance} className={`mt-3 px-4 py-3 rounded-xl ${checkingDistance ? 'bg-gray-300' : 'bg-chai-primary'}`}>
               <Text className="text-white font-medium">{checkingDistance ? 'Checking distance…' : 'Check delivery eligibility'}</Text>
             </Pressable>
@@ -456,7 +538,7 @@ export default function CheckoutScreen() {
           {payment === 'COD' && deliveryAllowed === false && (
             <Text className="mt-2 text-xs text-red-600">COD is not available outside the {DELIVERY_RADIUS_KM} km radius.</Text>
           )}
-          <TextInput value={note} onChangeText={setNote} placeholderTextColor="#757575" placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" />
+          <TextInput value={note} onChangeText={setNote} placeholderTextColor="#757575" placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" returnKeyType="done" />
         </View>
       </ScrollView>
 
@@ -470,6 +552,24 @@ export default function CheckoutScreen() {
               <Text className="text-white font-semibold">{paying ? 'Processing payment…' : (submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`)}</Text>
         </Pressable>
       </View>
+
+      {/* Out of radius popup */}
+      <Modal visible={showOutOfRadiusModal} transparent animationType="fade" onRequestClose={() => setShowOutOfRadiusModal(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <View style={{ width: '100%', backgroundColor: 'white', borderRadius: 18, padding: 20, borderWidth: 1, borderColor: '#E5E7EB' }}>
+            <Text className="text-xl font-bold text-chai-text-primary mb-1">Outside Delivery Radius</Text>
+            <Text className="text-chai-text-secondary mb-4">You are {Number.isFinite(distanceKm) ? distanceKm.toFixed(1) : 'far'} km away. Delivery is available only within {DELIVERY_RADIUS_KM} km.</Text>
+            <View className="flex-row gap-3">
+              <Pressable onPress={() => { setShowOutOfRadiusModal(false); checkDeliveryEligibility(); }} className="flex-1 py-3 rounded-xl bg-gray-200 items-center">
+                <Text className="text-gray-800 font-medium">Retry Location</Text>
+              </Pressable>
+              <Pressable onPress={() => { setType('Pickup'); setPayment('Online Payment'); setShowOutOfRadiusModal(false); }} className="flex-1 py-3 rounded-xl bg-chai-primary items-center">
+                <Text className="text-white font-medium">Switch to Pickup</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

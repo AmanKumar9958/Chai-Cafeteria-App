@@ -1,5 +1,5 @@
 // frontend/app/register.jsx
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator, Image, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
@@ -19,6 +19,14 @@ export default function RegisterScreen() {
     const [address1, setAddress1] = useState('');
     const [address2, setAddress2] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Refs for auto-advance between fields
+    const nameRef = useRef(null);
+    const emailRef = useRef(null);
+    const phoneRef = useRef(null);
+    const passwordRef = useRef(null);
+    const address1Ref = useRef(null);
+    const address2Ref = useRef(null);
 
     const handleRegister = async () => {
         setIsLoading(true);
@@ -46,12 +54,78 @@ export default function RegisterScreen() {
                         <Text className="text-chai-text-secondary mt-2 font-semibold">Create your account</Text>
                     </View>
 
-                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Full Name" value={name} onChangeText={setName} autoCapitalize='words' />
-                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize='none' />
-                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Address 1 (Home)" value={address1} onChangeText={setAddress1} />
-                    <TextInput className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary" placeholderTextColor="#757575" placeholder="Address 2 (Work)" value={address2} onChangeText={setAddress2} />
+                    <TextInput
+                        ref={nameRef}
+                        className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
+                        placeholderTextColor="#757575"
+                        placeholder="Full Name"
+                        value={name}
+                        onChangeText={setName}
+                        autoCapitalize='words'
+                        returnKeyType="next"
+                        onSubmitEditing={() => emailRef.current?.focus()}
+                        blurOnSubmit={false}
+                    />
+                    <TextInput
+                        ref={emailRef}
+                        className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
+                        placeholderTextColor="#757575"
+                        placeholder="Email"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        returnKeyType="next"
+                        onSubmitEditing={() => phoneRef.current?.focus()}
+                        blurOnSubmit={false}
+                    />
+                    <TextInput
+                        ref={phoneRef}
+                        className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
+                        placeholderTextColor="#757575"
+                        placeholder="Phone number"
+                        value={phone}
+                        onChangeText={(t) => { setPhone(t); if (t?.length === 10) { passwordRef.current?.focus(); } }}
+                        keyboardType="phone-pad"
+                        maxLength={10}
+                        returnKeyType="next"
+                        onSubmitEditing={() => passwordRef.current?.focus()}
+                        blurOnSubmit={false}
+                    />
+                    <TextInput
+                        ref={passwordRef}
+                        className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary"
+                        placeholderTextColor="#757575"
+                        placeholder="Password"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        autoCapitalize='none'
+                        returnKeyType="next"
+                        onSubmitEditing={() => address1Ref.current?.focus()}
+                        blurOnSubmit={false}
+                    />
+                    <TextInput
+                        ref={address1Ref}
+                        className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
+                        placeholderTextColor="#757575"
+                        placeholder="Address 1 (Home)"
+                        value={address1}
+                        onChangeText={setAddress1}
+                        returnKeyType="next"
+                        onSubmitEditing={() => address2Ref.current?.focus()}
+                        blurOnSubmit={false}
+                    />
+                    <TextInput
+                        ref={address2Ref}
+                        className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary"
+                        placeholderTextColor="#757575"
+                        placeholder="Address 2 (Work)"
+                        value={address2}
+                        onChangeText={setAddress2}
+                        returnKeyType="done"
+                        onSubmitEditing={handleRegister}
+                    />
 
                     <Pressable onPress={handleRegister} className="bg-chai-primary w-full p-4 rounded-xl items-center justify-center" disabled={isLoading}>
                         {isLoading ? (

@@ -1,5 +1,5 @@
 // frontend/app/login.jsx
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
@@ -11,6 +11,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -29,6 +31,7 @@ export default function LoginScreen() {
         </View>
 
         <TextInput
+          ref={emailRef}
           className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
           placeholder="Email Address"
           placeholderTextColor="#757575"
@@ -36,8 +39,12 @@ export default function LoginScreen() {
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
+          returnKeyType="next"
+          onSubmitEditing={() => passwordRef.current?.focus()}
+          blurOnSubmit={false}
         />
         <TextInput
+          ref={passwordRef}
           className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary"
           placeholder="Password"
           placeholderTextColor="#757575"
@@ -45,6 +52,8 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           secureTextEntry
           autoCapitalize='none'
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
         />
 
         <Pressable
