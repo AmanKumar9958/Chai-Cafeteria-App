@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Chai Cafeteria",
-    "slug": "chai-cafeteria",
+    "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/android-icon-background.png",
