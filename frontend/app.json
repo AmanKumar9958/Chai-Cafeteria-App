@@ -7,7 +7,6 @@
     "icon": "./assets/images/android-icon-background.png",
   "scheme": "chai-cafeteria",
     "userInterfaceStyle": "automatic",
-  "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
@@ -17,6 +16,7 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png"
       },
+      "newArchEnabled": true,
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
