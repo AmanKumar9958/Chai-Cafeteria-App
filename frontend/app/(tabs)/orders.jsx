@@ -145,16 +145,27 @@ export default function OrdersScreen() {
             )}
             <View className="flex-row justify-between mt-2">
               <Text className="text-sm text-chai-text-secondary">Items: {(item.items || []).length}</Text>
-              <Text className="text-sm font-semibold text-chai-text-primary">
-                {(() => {
-                  const subtotal = (item.items || []).reduce((s, it) => s + Number(it.price || 0) * Number(it.qty || it.quantity || 0), 0);
-                  const delivery = Number(item.deliveryFee ?? item.totals?.delivery ?? 0);
-                  const discount = Number(item.discount ?? item.totals?.discount ?? 0);
-                  const fromField = [item.total, item.totals?.total].map(n => Number(n)).find(n => Number.isFinite(n) && n > 0);
-                  const total = Number.isFinite(fromField) ? fromField : Math.max(0, subtotal + delivery - discount);
-                  return `Total: ₹${Number(total || 0).toFixed(2)}`;
-                })()}
-              </Text>
+              {(() => {
+                const toNum = (n) => {
+                  if (n == null) return 0;
+                  if (typeof n === 'number') return n;
+                  if (typeof n === 'string') return Number(n.replace(/[^0-9.\-]/g, '')) || 0;
+                  return Number(n) || 0;
+                };
+                const subtotal = (item.items || []).reduce((s, it) => s + toNum(it.price) * toNum(it.qty || it.quantity || 0), 0);
+                const delivery = toNum(item.deliveryFee ?? item.totals?.delivery ?? 0);
+                const discount = toNum(item.discount ?? item.totals?.discount ?? 0);
+                const candidates = [item.total, item.totals?.total];
+                const picked = candidates.map(toNum).find(n => Number.isFinite(n) && n > 0);
+                const total = Number.isFinite(picked) && picked > 0 ? picked : Math.max(0, subtotal + delivery - discount);
+                return (
+                  <View className="flex-row items-center">
+                    <Text className="text-sm font-semibold text-chai-text-primary">Total:</Text>
+                    <Text className="text-sm font-semibold text-chai-text-primary ml-1">₹{toNum(total).toFixed(2)}</Text>
+                  </View>
+                );
+              })()}
+              
             </View>
             {String(item.status).toLowerCase() === 'delivered' && (
               <View className="mt-3">

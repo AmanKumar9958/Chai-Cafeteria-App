@@ -419,7 +419,20 @@ export default function CheckoutScreen() {
             {['Pickup', 'Delivery'].map(opt => {
               const disabled = opt === 'Delivery' && deliveryAllowed === false;
               return (
-              <Pressable key={opt} onPress={() => { if (disabled) return; setType(opt); if (opt==='Delivery') checkDeliveryEligibility(); }} className={`flex-1 py-3 rounded-xl ${type === opt ? 'bg-chai-primary' : ''} ${disabled ? 'opacity-40' : ''}`}>
+              <Pressable
+                key={opt}
+                onPress={() => {
+                  if (disabled) return;
+                  setType(opt);
+                  if (opt === 'Delivery') {
+                    checkDeliveryEligibility();
+                  } else if (opt === 'Pickup') {
+                    // Business rule: Pickup always requires advance payment
+                    setPayment('Online Payment');
+                  }
+                }}
+                className={`flex-1 py-3 rounded-xl ${type === opt ? 'bg-chai-primary' : ''} ${disabled ? 'opacity-40' : ''}`}
+              >
                 <Text className={`text-center font-medium ${type === opt ? 'text-white' : 'text-chai-text-primary'}`}>{opt}</Text>
               </Pressable>
             );})}
@@ -526,8 +539,8 @@ export default function CheckoutScreen() {
           <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Payment Method</Text>
           <View className="flex-row bg-[#FFF3E9] rounded-xl p-1">
             {['Online Payment', 'COD'].map(opt => {
-              // COD disabled only when Delivery + outside radius
-              const codDisabled = type === 'Delivery' && outsideRadius === true;
+              // COD disabled when Pickup (advance required) or Delivery + outside radius
+              const codDisabled = (type === 'Pickup') || (type === 'Delivery' && outsideRadius === true);
               const disabled = (opt === 'COD') && codDisabled;
               const hidden = (opt === 'COD') && codDisabled; // hide COD for delivery when outside radius
               if (hidden) return null;
@@ -540,6 +553,9 @@ export default function CheckoutScreen() {
           </View>
           {payment === 'Online Payment' && (
             <Text className="mt-2 text-xs text-chai-text-secondary">You&apos;ll be redirected to Razorpay to complete payment securely.</Text>
+          )}
+          {type === 'Pickup' && (
+            <Text className="mt-2 text-xs text-red-600">Pickup requires advance payment — no COD.</Text>
           )}
           {type === 'Delivery' && outsideRadius && (
             <Text className="mt-2 text-xs text-red-600">More than {DELIVERY_RADIUS_KM} km, pay in advance only — no COD for delivery.</Text>
