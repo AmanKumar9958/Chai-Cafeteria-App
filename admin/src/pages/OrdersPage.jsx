@@ -60,12 +60,14 @@ export default function OrdersPage() {
                 <div className="sm:col-span-2"><span className="text-gray-500">Address:</span> {[o.address1, o.address2, o.landmark].filter(Boolean).join(', ') || '—'}</div>
                 <div><span className="text-gray-500">Pincode:</span> {o.pincode || '—'}</div>
               </div>
-              {/* Coupon details */}
-              {(o.couponCode || o.discount) && (
-                <div className="mt-2 text-sm">
-                  <span className="text-gray-500">Coupon:</span> {o.couponCode || '—'} {o.discount ? (<span className="text-green-700">(−₹{Number(o.discount).toFixed(2)})</span>) : null}
-                </div>
-              )}
+              {/* Coupon details: always show a clear value; avoid showing just 0 */}
+              <div className="mt-2 text-sm">
+                <span className="text-gray-500">Coupon:</span>{' '}
+                {o.couponCode ? o.couponCode : 'N/A'}
+                {Number(o.discount) > 0 && (
+                  <span className="text-green-700"> (−₹{Number(o.discount).toFixed(2)})</span>
+                )}
+              </div>
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <h4 className="font-semibold text-sm text-gray-700 mb-1">Items:</h4>
                 {(o.items || []).map(it => (
