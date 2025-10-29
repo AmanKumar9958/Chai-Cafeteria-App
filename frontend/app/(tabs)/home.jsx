@@ -6,7 +6,7 @@ import {
   FlatList, 
   ActivityIndicator, 
   Dimensions,
-  ImageBackground // Import ImageBackground for text-on-image cards
+  ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { useCart } from '../../context/CartContext';
 import axios from 'axios';
 import { StatusBar } from 'expo-status-bar';
+import { Image as ExpoImage } from 'expo-image';
 import { SearchBar } from '../../components/SearchBar';
 import { ImageCarousel } from '../../components/ImageCarousel';
 
@@ -31,10 +32,11 @@ const getGreeting = () => {
 };
 
 // --- Your backend should return this data for the carousel ---
+// Use HTTPS to avoid Android cleartext (HTTP) blocking in release builds
 const sliderImages = [
-  { _id: '1', imageURL: 'http://admin.chaicafeteria.com/images/category-burger.png'},
-  { _id: '2', imageURL: 'http://admin.chaicafeteria.com/images/category-pizza.png'},
-  { _id: '3', imageURL: 'http://admin.chaicafeteria.com/images/category-cookies.png'},
+  { _id: '1', imageURL: 'https://admin.chaicafeteria.com/images/category-burger.png' },
+  { _id: '2', imageURL: 'https://admin.chaicafeteria.com/images/category-pizza.png' },
+  { _id: '3', imageURL: 'https://admin.chaicafeteria.com/images/category-cookies.png' },
 ];
 
 export default function HomeScreen() {
@@ -105,29 +107,31 @@ export default function HomeScreen() {
   const renderCategoryCard = ({ item }) => (
     <Pressable
       onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: item._id } })}
-      className="h-40 rounded-3xl mb-5 overflow-hidden shadow-md bg-gray-200"
-      style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
+      className="h-44 rounded-3xl mb-5 overflow-hidden bg-gray-200"
+      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
     >
-      <ImageBackground
-        source={
-          item?.imageURL
-            ? { uri: item.imageURL }
-            : item?.image
-            ? { uri: item.image }
-            : require('../../assets/images/chai-cafeteria-icon.png')
-        }
-        className="w-full h-full justify-end p-5"
-        resizeMode="cover"
-      >
-        {/* Dark gradient overlay at the bottom */}
-        <View className="absolute bottom-0 left-0 right-0 h-1/2 bg-black/40" />
-        
-        {/* Category Name on top of the image */}
-        <Text className="text-white text-2xl font-bold uppercase" numberOfLines={2}>
-          {item.name}
-        </Text>
-
-      </ImageBackground>
+      <View className="w-full h-full">
+        <ExpoImage
+          source={
+            item?.imageURL
+              ? { uri: item.imageURL }
+              : item?.image
+              ? { uri: item.image }
+              : require('../../assets/images/chai-cafeteria-icon.png')
+          }
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
+        />
+        {/* Bottom overlay for readability */}
+        <View className="absolute bottom-0 left-0 right-0 h-20 bg-black/35" />
+        <View className="absolute bottom-0 left-0 right-0 p-5">
+          <Text className="text-white text-2xl font-extrabold" numberOfLines={2}>
+            {item.name}
+          </Text>
+        </View>
+      </View>
     </Pressable>
   );
 
@@ -171,6 +175,30 @@ export default function HomeScreen() {
               }}
               onClear={() => setSearch('')}
             />
+
+            {/* Quick filters */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: 24 }}
+              className="-mx-1 mt-2"
+            >
+              {[
+                { label: 'Popular', param: 'popular' },
+                { label: 'New', param: 'new' },
+                { label: 'Best Value', param: 'value' },
+                { label: 'Chai', param: 'chai' },
+                { label: 'Snacks', param: 'snacks' },
+              ].map((chip) => (
+                <Pressable
+                  key={chip.param}
+                  onPress={() => router.push({ pathname: '/(tabs)/menu', params: { filter: chip.param } })}
+                  className="px-4 py-2 bg-white rounded-full mx-1 border border-orange-200"
+                >
+                  <Text className="text-chai-primary font-medium">{chip.label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
           </View>
 
           <FlatList

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, memo } from 'react';
-import { View, ScrollView, Image, Dimensions, Pressable } from 'react-native';
+import { View, ScrollView, Dimensions, Pressable } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 
 const ImageCarouselBase = ({
   images = [], // [{ imageURL }]
@@ -57,10 +58,12 @@ const ImageCarouselBase = ({
             onPress={() => onPressSlide && onPressSlide(i, img)}
             android_ripple={{ color: '#00000018' }}
           >
-            <Image
+            <ExpoImage
               source={{ uri: img.imageURL }}
-              className="w-full h-full"
-              resizeMode="cover"
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
             />
           </Pressable>
         ))}
@@ -69,7 +72,7 @@ const ImageCarouselBase = ({
         {images.map((_, i) => (
           <View
             key={i}
-            className={`h-2 rounded-full mx-1 ${i === index ? 'w-4 bg-chai-primary' : 'w-2 bg-gray-300'}`}
+            className={`rounded-full mx-1 ${i === index ? 'w-3 h-3 bg-chai-primary' : 'w-2 h-2 bg-gray-300'}`}
           />
         ))}
       </View>
