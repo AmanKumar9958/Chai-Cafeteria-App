@@ -3,7 +3,9 @@
 
 let RazorpayCheckout;
 try {
-  RazorpayCheckout = require('react-native-razorpay');
+  const mod = require('react-native-razorpay');
+  // Support both CJS and ESM shapes
+  RazorpayCheckout = mod && mod.default ? mod.default : mod;
 } catch (_e) {
   RazorpayCheckout = null;
 }

@@ -16,7 +16,7 @@
         "backgroundColor": "#fdbd26",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "newArchEnabled": true,
+      "newArchEnabled": false,
       "versionCode": 1,
       "package": "com.chaicafeteriaranchi.frontend"
     },
@@ -39,6 +39,16 @@
         "expo-notifications",
         {
           "color": "#E8751A"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": false,
+            "enableProguardInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.razorpay.** { *; }\n-dontwarn com.razorpay.**\n-keep class com.razorpay.CheckoutActivity { *; }\n-keep class com.facebook.react.bridge.* { *; }\n-keepclassmembers class ** implements com.facebook.react.bridge.JavaScriptModule { *; }\n-keepclassmembers class ** implements com.facebook.react.bridge.NativeModule { *; }\n-keepclassmembers class ** extends com.facebook.react.bridge.ReactContextBaseJavaModule { *; }"
+          }
         }
       ]
     ],
