@@ -8,7 +8,7 @@ exports.getOrders = async (req, res) => {
     res.json({ orders });
   } catch (err) {
     console.error('getOrders', err);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: err?.message || 'Server error' });
   }
 };
 
@@ -27,7 +27,7 @@ exports.updateOrderStatus = async (req, res) => {
     res.json({ order, msg: 'Order updated' });
   } catch (err) {
     console.error('updateOrderStatus', err);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: err?.message || 'Server error' });
   }
 };
 
@@ -107,6 +107,6 @@ exports.createOrder = async (req, res) => {
     res.status(201).json({ order });
   } catch (err) {
     console.error('createOrder', err);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: err?.message || 'Server error' });
   }
 };
