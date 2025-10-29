@@ -5,21 +5,19 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/android-icon-background.png",
-  "scheme": "chai-cafeteria",
+    "scheme": "chai-cafeteria",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chaicafeteriaranchi.frontend"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#fdbd26",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png"
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "newArchEnabled": true,
       "versionCode": 1,
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
       "package": "com.chaicafeteriaranchi.frontend"
     },
     "web": {
@@ -42,22 +40,12 @@
         {
           "color": "#E8751A"
         }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "newArchEnabled": false
-          }
-        }
       ]
     ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    },
     "extra": {
-      "router": {},
+      "router": {
+        "origin": false
+      },
       "eas": {
         "projectId": "bee26cd4-aae1-4630-9e83-4f83769f2d24"
       }
