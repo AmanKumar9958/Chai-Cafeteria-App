@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const Coupon = require('../models/Coupon');
+const { Types } = require('mongoose');
 
 // GET /api/orders
 exports.getOrders = async (req, res) => {
@@ -36,14 +37,24 @@ exports.createOrder = async (req, res) => {
   try {
     const body = req.body || {};
     const items = Array.isArray(body.items)
-      ? body.items.map(it => ({
-          item: it.itemId || it.item, // optional reference
-          name: it.name,
-          price: Number(it.price),
-          qty: Number(it.qty || 1),
-          image: it.image,
-          category: it.category,
-        }))
+      ? body.items.map(it => {
+          const safe = {
+            name: it.name,
+            price: Number(it.price),
+            qty: Number(it.qty || 1),
+            image: it.image,
+          };
+          // Only set the optional reference if it's a valid ObjectId string
+          const ref = it.itemId || it.item || null;
+          if (ref && typeof ref === 'string' && Types.ObjectId.isValid(ref)) {
+            safe.item = ref;
+          }
+          // category can be ObjectId or string; set only if valid ObjectId
+          if (it.category && typeof it.category === 'string' && Types.ObjectId.isValid(it.category)) {
+            safe.category = it.category;
+          }
+          return safe;
+        })
       : [];
     if (!items.length) return res.status(400).json({ msg: 'items are required' });
 
