@@ -148,10 +148,11 @@ export default function OrdersScreen() {
               <Text className="text-sm font-semibold text-chai-text-primary">
                 {(() => {
                   const subtotal = (item.items || []).reduce((s, it) => s + Number(it.price || 0) * Number(it.qty || it.quantity || 0), 0);
-                  const total = Number.isFinite(Number(item.total)) && Number(item.total) > 0
-                    ? Number(item.total)
-                    : Math.max(0, subtotal + Number(item.deliveryFee || 0) - Number(item.discount || 0));
-                  return `Total: ₹${total.toFixed(2)}`;
+                  const delivery = Number(item.deliveryFee ?? item.totals?.delivery ?? 0);
+                  const discount = Number(item.discount ?? item.totals?.discount ?? 0);
+                  const fromField = [item.total, item.totals?.total].map(n => Number(n)).find(n => Number.isFinite(n) && n > 0);
+                  const total = Number.isFinite(fromField) ? fromField : Math.max(0, subtotal + delivery - discount);
+                  return `Total: ₹${Number(total || 0).toFixed(2)}`;
                 })()}
               </Text>
             </View>
