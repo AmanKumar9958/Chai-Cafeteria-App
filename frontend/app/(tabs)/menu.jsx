@@ -304,7 +304,18 @@ export default function MenuScreen() {
             ))}
           </View>
         ) : (
-          <View className="py-10 items-center"><Text className="text-gray-500">No items found.</Text></View>
+          <View className="py-10 items-center px-8">
+            <ExpoImage
+              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/562/562678.png' }}
+              style={{ width: 144, height: 144, marginBottom: 12 }}
+              contentFit="contain"
+            />
+            <Text className="text-lg font-semibold text-chai-text-primary mb-1">Nothing here yet</Text>
+            <Text className="text-sm text-chai-text-secondary text-center">No items in this category. Try a different category or browse all.</Text>
+            <Pressable onPress={() => setSelected('all')} className="mt-4 bg-chai-primary px-5 py-3 rounded-full">
+              <Text className="text-white font-semibold">Browse all items</Text>
+            </Pressable>
+          </View>
         )}
         contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}

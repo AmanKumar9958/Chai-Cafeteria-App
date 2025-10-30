@@ -8,6 +8,7 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { router } from 'expo-router';
+import { Image as ExpoImage } from 'expo-image';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
@@ -94,8 +95,20 @@ export default function OrdersScreen() {
 
   if (!orders || orders.length === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-chai-bg">
-        <Text className="text-lg text-gray-500" numberOfLines={1} ellipsizeMode="tail">You have no orders yet</Text>
+      <SafeAreaView className="flex-1 items-center justify-center bg-chai-bg px-8">
+        <View className="items-center">
+          <ExpoImage
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2822/2822682.png' }}
+            style={{ width: 144, height: 144, marginBottom: 16 }}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
+          <Text className="text-lg font-semibold text-chai-text-primary mb-1">No orders yet</Text>
+          <Text className="text-sm text-chai-text-secondary text-center mb-4">Your past orders will show up here once you place one.</Text>
+          <Pressable onPress={() => router.push('/(tabs)/menu')} className="bg-chai-primary px-5 py-3 rounded-full">
+            <Text className="text-white font-semibold">Browse menu</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
     );
   }
