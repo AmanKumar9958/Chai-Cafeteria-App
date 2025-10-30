@@ -2,10 +2,14 @@ const Order = require('../models/Order');
 const Coupon = require('../models/Coupon');
 const { Types } = require('mongoose');
 
-// GET /api/orders
+// GET /api/orders (scoped to the authenticated user)
 exports.getOrders = async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 }).lean();
+    const userId = req?.user?.id || req?.user?._id || req?.userDoc?._id;
+    if (!userId) return res.status(401).json({ msg: 'Unauthorized' });
+    const orders = await Order.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .lean();
     res.json({ orders });
   } catch (err) {
     console.error('getOrders', err);
@@ -32,9 +36,11 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
-// POST /api/orders — frontend checkout
+// POST /api/orders — frontend checkout (associate to authenticated user)
 exports.createOrder = async (req, res) => {
   try {
+    const userId = req?.user?.id || req?.user?._id || req?.userDoc?._id;
+    if (!userId) return res.status(401).json({ msg: 'Unauthorized' });
     const body = req.body || {};
     const items = Array.isArray(body.items)
       ? body.items.map(it => {
@@ -112,7 +118,7 @@ exports.createOrder = async (req, res) => {
       landmark,
       pincode,
       notes,
-      user: body.user || undefined,
+      user: userId,
     });
     await order.save();
     res.status(201).json({ order });

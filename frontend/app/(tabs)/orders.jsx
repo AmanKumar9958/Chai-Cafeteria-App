@@ -14,7 +14,7 @@ const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
 
 export default function OrdersScreen() {
-  const { userToken } = useAuth();
+  const { userToken, user } = useAuth();
   const { addItemsBatch } = useCart() || {};
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
@@ -38,14 +38,28 @@ export default function OrdersScreen() {
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/orders`, { headers: { Authorization: `Bearer ${userToken}` } });
-      setOrders(res.data.orders || []);
+      const incoming = res.data.orders || [];
+      // Defensive: filter orders to current user, in case backend forgets to scope
+      const myId = user?._id || user?.id || user?.userId || user?.uid || null;
+      const myEmail = user?.email || user?.username || null;
+      const mine = incoming.filter((o) => {
+        const oid = o?.user?._id || o?.userId || o?.user || o?.customerId || null;
+        const oemail = o?.user?.email || o?.userEmail || o?.email || null;
+        // Match by id when possible, else by email as a fallback
+        if (myId && oid && String(oid) === String(myId)) return true;
+        if (!myId && myEmail && oemail && String(oemail).toLowerCase() === String(myEmail).toLowerCase()) return true;
+        // If backend did not include any user marker, we can't be certain; drop it.
+        if (!oid && !oemail) return false;
+        return false;
+      });
+      setOrders(mine);
     } catch (err) {
       console.warn('Failed to load orders, treating as none', err?.response?.status || err.message);
       setOrders([]);
     } finally {
       setLoading(false);
     }
-  }, [userToken]);
+  }, [userToken, user]);
 
   useEffect(() => {
     fetchOrders();
