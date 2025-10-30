@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TextInput, FlatList, SectionList, Pressable, ActivityIndicator, Image } from 'react-native';
+import React, { useEffect, useState, useRef, memo } from 'react';
+import { View, Text, TextInput, FlatList, SectionList, Pressable, ActivityIndicator } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message'; 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
 import { useLocalSearchParams, router } from 'expo-router'; // Import useLocalSearchParams
+import { Image as ExpoImage } from 'expo-image';
+import Skeleton from '../../components/Skeleton';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
 const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api'; // Fallback needed
@@ -31,6 +33,23 @@ export default function MenuScreen() {
   const { addItem, items: itemsInCart } = useCart();
 
   const catsRef = useRef(null); // Ref for the horizontal category FlatList
+
+  const normalizeImageUrl = (u) => {
+    try {
+      if (!u || typeof u !== 'string') return null;
+      let url = u.trim();
+      if (url.startsWith('//')) url = `https:${url}`;
+      if (url.startsWith('http://')) url = url.replace('http://', 'https://');
+      if (!/^https?:\/\//i.test(url)) {
+        const base = API_URL.replace(/\/api$/, '');
+        if (url.startsWith('/')) return `${base}${url}`;
+        return `${base}/${url}`;
+      }
+      return url;
+    } catch {
+      return null;
+    }
+  };
 
   // --- Effects ---
 
@@ -139,32 +158,53 @@ export default function MenuScreen() {
     </Pressable>
   );
 
-  const renderItemCard = ({ item }) => {
-  // (cart entry lookup removed — not displaying per-item qty here)
+  const ItemCardBase = ({ item }) => {
+    const [loaded, setLoaded] = useState(false);
+    const src = (() => {
+      const u = normalizeImageUrl(item?.image);
+      return u ? { uri: u } : require('../../assets/images/chai-cafeteria-icon.png');
+    })();
     return (
-        // Using a card style similar to the reference image
-       <View className="flex-1 p-2">
-         <View className="bg-white rounded-2xl shadow-md overflow-hidden">
-           <Image source={{ uri: item.image || 'https://placehold.co/300x200?text=No+Image' }} className="w-full h-32" resizeMode="cover"/>
-           <View className="p-3">
-             <Text className="text-base font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{item.name}</Text>
-             <View className="flex-row justify-between items-center">
-               <Text className="text-sm text-chai-text-secondary">₹{Number(item.price).toFixed(2)}</Text>
-               <Pressable 
-                  onPress={() => { 
-                      addItem(item); 
-                      Toast.show({ type: 'success', text1: 'Added to cart', text2: item.name, position: 'bottom' });
-                  }} 
-                  className="bg-chai-primary w-8 h-8 rounded-full items-center justify-center active:opacity-90"
-               >
-                 <Ionicons name="add" size={20} color="white" />
-               </Pressable>
-             </View>
-           </View>
-         </View>
-       </View>
+      <View className="flex-1 p-2">
+        <View className="bg-white rounded-2xl shadow-md overflow-hidden">
+          <View style={{ width: '100%', height: 128 }}>
+            {!loaded && (
+              <View className="absolute inset-0">
+                <Skeleton width="100%" height={128} borderRadius={16} />
+              </View>
+            )}
+            <ExpoImage
+              source={src}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
+              onLoadEnd={() => setLoaded(true)}
+            />
+          </View>
+          <View className="p-3">
+            <Text className="text-base font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{item.name}</Text>
+            <View className="flex-row justify-between items-center">
+              <Text className="text-sm text-chai-text-secondary">₹{Number(item.price).toFixed(2)}</Text>
+              <Pressable 
+                onPress={() => { 
+                  addItem(item); 
+                  Toast.show({ type: 'success', text1: 'Added to cart', text2: item.name, position: 'bottom' });
+                }} 
+                className="bg-chai-primary w-8 h-8 rounded-full items-center justify-center active:opacity-90"
+              >
+                <Ionicons name="add" size={20} color="white" />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </View>
     );
   };
+  ItemCardBase.displayName = 'ItemCard';
+  const ItemCard = memo(ItemCardBase);
+
+  const renderItemCard = ({ item }) => <ItemCard item={item} />;
 
   // Render a row containing up to two item cards
   const renderRow = ({ item: row }) => {
@@ -238,7 +278,31 @@ export default function MenuScreen() {
           </View>
         )}
         ListEmptyComponent={isLoadingItems ? (
-          <View className="py-10 items-center"><ActivityIndicator size="large" color="#C7A27C"/></View>
+          <View style={{ paddingHorizontal: 8, paddingVertical: 16 }}>
+            {/* Skeleton grid: two columns, three rows */}
+            {[0,1,2].map(r => (
+              <View key={r} className="flex-row">
+                <View className="flex-1 p-2">
+                  <View className="bg-white rounded-2xl overflow-hidden">
+                    <Skeleton width="100%" height={128} borderRadius={16} />
+                    <View className="p-3">
+                      <Skeleton width={120} height={14} borderRadius={7} style={{ marginBottom: 8 }} />
+                      <Skeleton width={80} height={12} borderRadius={6} />
+                    </View>
+                  </View>
+                </View>
+                <View className="flex-1 p-2">
+                  <View className="bg-white rounded-2xl overflow-hidden">
+                    <Skeleton width="100%" height={128} borderRadius={16} />
+                    <View className="p-3">
+                      <Skeleton width={120} height={14} borderRadius={7} style={{ marginBottom: 8 }} />
+                      <Skeleton width={80} height={12} borderRadius={6} />
+                    </View>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
         ) : (
           <View className="py-10 items-center"><Text className="text-gray-500">No items found.</Text></View>
         )}

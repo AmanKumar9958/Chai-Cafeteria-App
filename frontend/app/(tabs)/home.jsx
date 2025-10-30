@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { 
   View, 
   Text, 
   Pressable, 
   FlatList, 
-  ActivityIndicator, 
-  Dimensions,
-  ScrollView
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Image as ExpoImage } from 'expo-image';
 import { SearchBar } from '../../components/SearchBar';
 import { ImageCarousel } from '../../components/ImageCarousel';
+import Skeleton from '../../components/Skeleton';
 
 // Ensure API URL is correctly loaded from environment variables
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
@@ -51,6 +50,27 @@ export default function HomeScreen() {
 
   const sliderWidth = Dimensions.get('window').width - 48; // match p-6 (24px)
   // Carousel state moved into ImageCarousel component to avoid Home re-renders
+
+  // Normalize incoming image URLs so they render in Android release builds
+  const normalizeImageUrl = (u) => {
+    try {
+      if (!u || typeof u !== 'string') return null;
+      // Trim and fix protocol-relative
+      let url = u.trim();
+      if (url.startsWith('//')) url = `https:${url}`;
+      // Prefer HTTPS (cleartext HTTP is blocked in Android release)
+      if (url.startsWith('http://')) url = url.replace('http://', 'https://');
+      // If it isn't absolute, prefix with API origin (without /api)
+      if (!/^https?:\/\//i.test(url)) {
+        const base = API_URL.replace(/\/api$/, '');
+        if (url.startsWith('/')) return `${base}${url}`;
+        return `${base}/${url}`;
+      }
+      return url;
+    } catch {
+      return null;
+    }
+  };
 
   // Main data fetching effect
   useEffect(() => {
@@ -104,44 +124,75 @@ export default function HomeScreen() {
     </>
   );
 
-  const renderCategoryCard = ({ item }) => (
-    <Pressable
-      onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: item._id } })}
-      className="h-44 rounded-3xl mb-5 overflow-hidden bg-gray-200"
-      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
-    >
-      <View className="w-full h-full">
-        <ExpoImage
-          source={
-            item?.imageURL
-              ? { uri: item.imageURL }
-              : item?.image
-              ? { uri: item.image }
-              : require('../../assets/images/chai-cafeteria-icon.png')
-          }
-          style={{ width: '100%', height: '100%' }}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          transition={200}
-        />
-        {/* Bottom overlay for readability */}
-        <View className="absolute bottom-0 left-0 right-0 h-20 bg-black/35" />
-        <View className="absolute bottom-0 left-0 right-0 p-5">
-          <Text className="text-white text-2xl font-extrabold" numberOfLines={2}>
-            {item.name}
-          </Text>
+  const CategoryCardBase = ({ item }) => {
+    const [loaded, setLoaded] = useState(false);
+    const src = (() => {
+      const u = normalizeImageUrl(item?.imageURL || item?.image);
+      return u ? { uri: u } : require('../../assets/images/chai-cafeteria-icon.png');
+    })();
+    return (
+      <Pressable
+        onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: item._id } })}
+        className="h-44 rounded-3xl mb-5 overflow-hidden bg-gray-200"
+        style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
+      >
+        <View className="w-full h-full">
+          {!loaded && (
+            <View className="absolute inset-0">
+              <Skeleton width="100%" height="100%" borderRadius={24} />
+            </View>
+          )}
+          <ExpoImage
+            source={src}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+            onLoadEnd={() => setLoaded(true)}
+          />
+          {/* Bottom overlay for readability */}
+          <View className="absolute bottom-0 left-0 right-0 h-20 bg-black/35" />
+          <View className="absolute bottom-0 left-0 right-0 p-5">
+            <Text className="text-white text-2xl font-extrabold" numberOfLines={2}>
+              {item.name}
+            </Text>
+          </View>
         </View>
-      </View>
-    </Pressable>
-  );
+      </Pressable>
+    );
+  };
+  CategoryCardBase.displayName = 'CategoryCard';
+  const CategoryCard = memo(CategoryCardBase);
+
+  const renderCategoryCard = ({ item }) => <CategoryCard item={item} />;
 
   return (
     <SafeAreaView className="flex-1 bg-chai-bg pt-5">
       <StatusBar style="dark" />
       {isLoading ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#E8751A" />
-        </View>
+        <>
+          {/* Greeting + Cart (visible even while loading) */}
+          <View className="px-6">
+            <View className="flex-row justify-between items-center mb-6">
+              <View>
+                <Text className="text-xl text-chai-text-secondary font-medium">{greeting},</Text>
+                <Text className="text-3xl font-bold text-chai-text-primary" numberOfLines={1}>{name}</Text>
+              </View>
+              <Pressable className="relative p-2 rounded-full">
+                <Ionicons name="cart-outline" size={32} color="#111" />
+              </Pressable>
+            </View>
+            <SearchBar value={search} onChange={setSearch} onSubmit={() => {}} onClear={() => setSearch('')} />
+          </View>
+
+          {/* Skeleton carousel and category tiles */}
+          <View className="px-6 mt-4">
+            <Skeleton width="100%" height={176} borderRadius={16} style={{ marginBottom: 24 }} />
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} width="100%" height={176} borderRadius={24} style={{ marginBottom: 20 }} />
+            ))}
+          </View>
+        </>
       ) : (
         <>
           {/* Greeting + Cart */}
@@ -176,41 +227,19 @@ export default function HomeScreen() {
               onClear={() => setSearch('')}
             />
 
-            {/* Quick filters */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingRight: 24 }}
-              className="-mx-1 mt-2"
-            >
-              {[
-                { label: 'Popular', param: 'popular' },
-                { label: 'New', param: 'new' },
-                { label: 'Best Value', param: 'value' },
-                { label: 'Chai', param: 'chai' },
-                { label: 'Snacks', param: 'snacks' },
-              ].map((chip) => (
-                <Pressable
-                  key={chip.param}
-                  onPress={() => router.push({ pathname: '/(tabs)/menu', params: { filter: chip.param } })}
-                  className="px-4 py-2 bg-white rounded-full mx-1 border border-orange-200"
-                >
-                  <Text className="text-chai-primary font-medium">{chip.label}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            {/* Quick filters removed by request */}
           </View>
 
           <FlatList
-          data={categories}
-          renderItem={renderCategoryCard}
-          keyExtractor={c => c._id}
-          ListHeaderComponent={renderHeader}
-          keyboardShouldPersistTaps="always"
-          keyboardDismissMode="none"
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }} // Increased bottom padding
-          showsVerticalScrollIndicator={false}
-        />
+            data={categories}
+            renderItem={renderCategoryCard}
+            keyExtractor={c => c._id}
+            ListHeaderComponent={renderHeader}
+            keyboardShouldPersistTaps="always"
+            keyboardDismissMode="none"
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+          />
         </>
       )}
     </SafeAreaView>
