@@ -8,21 +8,38 @@ export const CartProvider = ({ children }) => {
   const [items, setItems] = useState([]); // { itemId, name, price, qty }
   const { user } = useAuth();
 
-  const storageKey = user?.id ? `cart_${user.id}` : 'cart_guest';
+  // Build a stable per-user storage key; fallback to guest
+  const userKey = user?._id || user?.id || user?.uid || user?.email || 'guest';
+  const storageKey = `cart_${String(userKey)}`;
 
   useEffect(() => {
-    // load cart for current user
+    // load cart for current user; if this user never had a cart but a legacy guest cart exists,
+    // migrate it once and clear the guest key to prevent leaks between accounts.
     const load = async () => {
       try {
-        const raw = await AsyncStorage.getItem(storageKey);
-        if (raw) setItems(JSON.parse(raw));
-        else setItems([]);
+        const current = await AsyncStorage.getItem(storageKey);
+        if (current) {
+          setItems(JSON.parse(current));
+          return;
+        }
+        // Migration path: move from cart_guest -> user-specific cart on first login
+        if (userKey !== 'guest') {
+          const legacy = await AsyncStorage.getItem('cart_guest');
+          if (legacy) {
+            await AsyncStorage.setItem(storageKey, legacy);
+            await AsyncStorage.removeItem('cart_guest');
+            setItems(JSON.parse(legacy));
+            return;
+          }
+        }
+        setItems([]);
       } catch (e) {
         console.error('Failed to load cart', e);
+        setItems([]);
       }
     };
     load();
-  }, [storageKey]);
+  }, [storageKey, userKey]);
 
   useEffect(() => {
     // persist when items change
