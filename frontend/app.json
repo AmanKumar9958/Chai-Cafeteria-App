@@ -40,7 +40,8 @@
         {
           "color": "#E8751A"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "router": {
