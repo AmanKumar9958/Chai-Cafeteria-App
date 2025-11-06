@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
+import API from '../api';
 
 const AuthContext = createContext(null);
 
@@ -7,25 +8,28 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('adminAuth');
-    setIsAuthenticated(saved === 'true');
+    const token = localStorage.getItem('adminToken');
+    setIsAuthenticated(!!token);
   }, []);
 
   const login = async (username, password) => {
-    const expectedUser = import.meta.env.VITE_ADMIN_USERNAME || 'admin@chaicafe2025';
-    const expectedPass = import.meta.env.VITE_ADMIN_PASSWORD || 'chaicafeteria2025';
-    if (username === expectedUser && password === expectedPass) {
-      localStorage.setItem('adminAuth', 'true');
+    try {
+      const res = await API.post('/admin/auth/login', { username, password });
+      const token = res.data?.token;
+      if (!token) throw new Error('No token received');
+      localStorage.setItem('adminToken', token);
       setIsAuthenticated(true);
       toast.success('Welcome, admin');
       return true;
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Invalid credentials');
+      return false;
     }
-    toast.error('Invalid credentials');
-    return false;
   };
 
   const logout = () => {
-    localStorage.removeItem('adminAuth');
+    localStorage.removeItem('adminToken');
     setIsAuthenticated(false);
     toast('Logged out');
   };

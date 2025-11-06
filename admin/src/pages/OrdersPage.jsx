@@ -9,16 +9,22 @@ export default function OrdersPage() {
 
   async function load() {
     try {
-      const res = await API.get('/orders');
+      // Use admin endpoint to fetch all orders
+      const res = await API.get('/admin/orders');
       setOrders(res.data?.orders || res.data || []);
     } catch (err) {
       console.error(err);
-      toast.error('Failed to load orders');
+      if (err?.response?.status === 401) {
+        toast.error('Please login to view orders');
+      } else {
+        toast.error('Failed to load orders');
+      }
+      setOrders([]);
     }
   }
 
   async function update(id, status) {
-    const promise = API.put('/orders/' + id, { status });
+    const promise = API.put('/admin/orders/' + id, { status });
     toast.promise(promise, {
       loading: 'Updating status...',
       success: 'Status updated!',

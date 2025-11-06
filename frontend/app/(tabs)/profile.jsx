@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
+import { router } from 'expo-router';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 
@@ -20,6 +21,8 @@ export default function ProfileScreen() {
     const fetchProfile = async () => {
       if (!userToken) {
         setLoading(false);
+        // If not authenticated, send to login screen rather than showing a fake profile
+        try { router.replace('/login'); } catch {}
         return;
       }
       try {
@@ -28,6 +31,8 @@ export default function ProfileScreen() {
         setForm({ name: res.data.user?.name || '', phone: res.data.user?.phone || '', address1: res.data.user?.address1 || '', address2: res.data.user?.address2 || '' });
       } catch (err) {
         console.error('Failed to load profile', err?.response?.data || err.message);
+        // If token invalid now, route to login
+        try { router.replace('/login'); } catch {}
       } finally {
         setLoading(false);
       }
@@ -50,7 +55,7 @@ export default function ProfileScreen() {
     );
   }
 
-  const display = user || { name: 'User', email: '-', phone: '-', address1: '-', address2: '-' };
+  const display = user || { name: '', email: '-', phone: '-', address1: '-', address2: '-' };
 
   return (
     <SafeAreaView className="flex-1 bg-chai-bg p-6">
@@ -146,9 +151,11 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      <Pressable onPress={confirmLogout} className="mt-4 bg-chai-primary rounded-xl p-4 items-center">
-        <Text className="text-white font-bold">Logout</Text>
-      </Pressable>
+      {!!user && (
+        <Pressable onPress={confirmLogout} className="mt-4 bg-chai-primary rounded-xl p-4 items-center">
+          <Text className="text-white font-bold">Logout</Text>
+        </Pressable>
+      )}
     </SafeAreaView>
   );
 }

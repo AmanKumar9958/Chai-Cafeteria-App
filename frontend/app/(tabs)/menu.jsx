@@ -189,7 +189,7 @@ export default function MenuScreen() {
               <Pressable 
                 onPress={() => { 
                   addItem(item); 
-                  Toast.show({ type: 'success', text1: 'Added to cart', text2: item.name, position: 'bottom' });
+                  Toast.show({ type: 'success', text1: 'Added to cart', text2: item.name });
                 }} 
                 className="bg-chai-primary w-8 h-8 rounded-full items-center justify-center active:opacity-90"
               >

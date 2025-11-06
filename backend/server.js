@@ -31,6 +31,10 @@ app.use('/api/coupons', require('./routes/couponRoutes'));
 // Payments routes (Razorpay)
 app.use('/api/payments', require('./routes/paymentRoutes'));
 
+// Admin routes (protected by ADMIN_SECRET header)
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/admin/auth', require('./routes/adminAuthRoutes'));
+
 // We will add our auth and menu routes here later
 
 // Health endpoint to be used by render uptime

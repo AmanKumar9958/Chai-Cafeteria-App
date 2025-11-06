@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { router } from 'expo-router';
@@ -52,6 +53,7 @@ async function postJsonWithFallback(relativePaths, body) {
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
   const { items, updateQty, removeItem, clear } = useCart();
+  const { userToken } = useAuth();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -178,6 +180,12 @@ export default function CheckoutScreen() {
     if (payment === 'Online Payment') {
       return handleOnlinePaymentAndPlaceOrder();
     }
+    // Require login for order placement
+    if (!userToken) {
+      Toast.show({ type: 'error', text1: 'Login required', text2: 'Please login to place an order.' });
+      try { router.push('/login'); } catch {}
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {
@@ -190,7 +198,7 @@ export default function CheckoutScreen() {
         items: items.map(it => ({ itemId: it._id, name: it.name, price: Number(it.price), qty: it.qty })),
         totals,
       };
-      await axios.post(`${API_URL}/orders`, payload);
+  await axios.post(`${API_URL}/orders`, payload, { headers: { Authorization: `Bearer ${userToken}` } });
       Toast.show({ type: 'success', text1: 'Order placed!', text2: "We'll get started right away." });
       clear();
       router.replace('/(tabs)/orders');
@@ -253,6 +261,13 @@ export default function CheckoutScreen() {
       if (!verifyRes.data?.success) throw new Error('Payment verification failed');
 
       // 4) Place order with payment details
+      // Require login for order placement
+      if (!userToken) {
+        Toast.show({ type: 'error', text1: 'Login required', text2: 'Please login to place an order.' });
+        try { router.push('/login'); } catch {}
+        setPaying(false);
+        return;
+      }
       setSubmitting(true);
       const payload = {
         customer: { name, phone, email },
@@ -270,7 +285,7 @@ export default function CheckoutScreen() {
         items: items.map(it => ({ itemId: it._id, name: it.name, price: Number(it.price), qty: it.qty })),
         totals,
       };
-      await axios.post(`${API_URL}/orders`, payload);
+  await axios.post(`${API_URL}/orders`, payload, { headers: { Authorization: `Bearer ${userToken}` } });
       Toast.show({ type: 'success', text1: 'Payment successful', text2: 'Order placed!' });
       clear();
       router.replace('/(tabs)/orders');
@@ -463,7 +478,7 @@ export default function CheckoutScreen() {
               className="flex-1 bg-white border border-chai-divider rounded-xl px-4 py-3 mr-3 text-chai-text-primary"
             />
             {appliedCoupon ? (
-              <Pressable onPress={() => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(''); Toast.show({ type: 'info', text1: 'Coupon removed', position: 'bottom' }); }} className="px-4 py-3 rounded-xl bg-gray-200">
+              <Pressable onPress={() => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(''); Toast.show({ type: 'info', text1: 'Coupon removed' }); }} className="px-4 py-3 rounded-xl bg-gray-200">
                 <Text className="font-medium text-gray-800">Remove</Text>
               </Pressable>
             ) : (

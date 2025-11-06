@@ -12,7 +12,7 @@ import Toast from 'react-native-toast-message';
 // On Mac, open Terminal and type `ifconfig`.
 // Do NOT use "localhost" as your phone won't be able to find it.
 // Normalize API base: allow EXPO_PUBLIC_API_URL with or without trailing "/api" or "/"
-const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
+const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'https://chai-cafeteria-app.onrender.com/api';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
 
 const AuthContext = createContext();
@@ -34,8 +34,11 @@ export const AuthProvider = ({ children }) => {
             const res = await axios.get(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
             setUser(res.data.user || null);
           } catch (e) {
-            console.error('Failed to verify token on load', e?.message || e);
+            // If token is invalid/expired, clear it so app routes to /login
+            console.error('Failed to verify token on load', e?.response?.status, e?.message || e);
             setUser(null);
+            setUserToken(null);
+            await AsyncStorage.removeItem('userToken');
           }
         }
       } catch (e) {
@@ -59,6 +62,10 @@ export const AuthProvider = ({ children }) => {
         setUser(res.data.user || null);
       } catch (e) {
         console.error('Failed to fetch profile after login', e?.message || e);
+        // If we cannot fetch profile immediately, fall back to logout to keep app consistent
+        setUserToken(null);
+        await AsyncStorage.removeItem('userToken');
+        throw e;
       }
       Toast.show({ type: 'success', text1: 'Welcome back!' });
       router.replace('/(tabs)/home'); // Navigate to home on successful login
