@@ -44,6 +44,9 @@ export default function OrdersPage() {
                   <strong className="text-gray-800">Order ID: {o._id || o.id}</strong>
                   <div className="text-sm text-gray-600">{(o.items || []).length} items • <span className="font-medium">₹{o.total || o.amount || 0}</span></div>
                   <div className="mt-1 text-xs text-gray-500">Payment: {o.paymentMethod || 'N/A'}</div>
+                  {o.createdAt && (
+                    <div className="mt-1 text-xs text-gray-500">Placed on: {new Date(o.createdAt).toLocaleString()}</div>
+                  )}
                 </div>
                 <div className="mt-2 sm:mt-0">
                   <select 

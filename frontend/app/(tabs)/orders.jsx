@@ -155,6 +155,13 @@ export default function OrdersScreen() {
                 );
               })()}
             </View>
+            {(() => {
+              const d = item.createdAt ? new Date(item.createdAt) : null;
+              const when = d ? d.toLocaleString() : null;
+              return when ? (
+                <Text className="text-[12px] text-chai-text-secondary mb-1">Placed on: {when}</Text>
+              ) : null;
+            })()}
             <StatusProgress status={item.status} />
             <Text className="text-sm text-chai-text-secondary mb-2">Payment: {item.paymentMethod || '—'}</Text>
             <View className="mt-1">
