@@ -27,6 +27,27 @@ export async function ensureAndroidChannel() {
   }
 }
 
+// Ensure runtime notification permission (Android 13+ and iOS)
+export async function ensureNotificationPermission() {
+  try {
+    await ensureAndroidChannel();
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      console.warn('Permission for notifications not granted');
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('Failed to ensure notification permission', e?.message || e);
+    return false;
+  }
+}
+
 export async function registerForPushNotificationsAsync() {
   try {
     // Allow disabling remote push registration (e.g., if not using Firebase/APNs)
@@ -40,19 +61,9 @@ export async function registerForPushNotificationsAsync() {
       console.warn('Push notifications require a physical device.');
       return null;
     }
-
-    await ensureAndroidChannel();
-
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-      console.warn('Permission for notifications not granted');
-      return null;
-    }
+    // Ensure permission/channel for remote as well
+    const ok = await ensureNotificationPermission();
+    if (!ok) return null;
 
     // Pass EAS projectId explicitly to avoid discovery issues in dev clients
     const projectId =
@@ -93,6 +104,8 @@ export async function scheduleRegularNotifications(times = [
   { hour: 18, minute: 0 },
 ]) {
   try {
+    const granted = await ensureNotificationPermission();
+    if (!granted) return false;
     // Prevent duplicates on re-run by clearing all scheduled
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     if (scheduled?.length) {
@@ -116,6 +129,26 @@ export async function scheduleRegularNotifications(times = [
     return true;
   } catch (e) {
     console.error('Failed to schedule regular notifications', e?.message || e);
+    return false;
+  }
+}
+
+// One-off local notification for debugging (e.g., in N seconds)
+export async function scheduleOneOffNotification(delaySeconds = 10) {
+  try {
+    const granted = await ensureNotificationPermission();
+    if (!granted) return false;
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Chai Cafeteria',
+        body: 'Test notification ✅',
+        sound: 'default',
+      },
+      trigger: { seconds: Math.max(1, delaySeconds) },
+    });
+    return true;
+  } catch (e) {
+    console.error('Failed to schedule one-off notification', e?.message || e);
     return false;
   }
 }

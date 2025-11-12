@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CartProvider } from '../context/CartContext';
 import * as SplashScreen from 'expo-splash-screen';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
-import { registerForPushNotificationsAsync, sendPushTokenToBackend, scheduleRegularNotifications, subscribeForegroundNotification, subscribeNotificationResponse } from '../utils/notifications';
+import { registerForPushNotificationsAsync, sendPushTokenToBackend, scheduleRegularNotifications, subscribeForegroundNotification, subscribeNotificationResponse, scheduleOneOffNotification, ensureNotificationPermission } from '../utils/notifications';
 import CustomSplash from '../components/CustomSplash';
 
 SplashScreen.preventAutoHideAsync();
@@ -28,10 +28,16 @@ function MainLayout() {
     let unsubscribeResponse = null;
     const initNotifications = async () => {
       if (!userToken) return;
+      // Ensure permission for local notifications (Android 13+ and iOS)
+      await ensureNotificationPermission();
       // Remote push registration can be disabled via env (EXPO_PUBLIC_ENABLE_REMOTE_PUSH=false)
       const expoPushToken = await registerForPushNotificationsAsync();
       if (expoPushToken) await sendPushTokenToBackend(expoPushToken, userToken);
       await scheduleRegularNotifications(); // 2x per day default
+      // Optional quick test: schedule one-off in 10s when EXPO_PUBLIC_NOTIFICATIONS_DEBUG=true
+      if (process.env.EXPO_PUBLIC_NOTIFICATIONS_DEBUG === 'true') {
+        try { await scheduleOneOffNotification(10); } catch {}
+      }
       // Optional: show a toast in foreground when notifications arrive
       unsubscribe = subscribeForegroundNotification(() => {
         Toast.show({ type: 'info', text1: 'New update', text2: 'Check your orders for latest status.' });
