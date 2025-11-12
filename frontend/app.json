@@ -18,7 +18,10 @@
       },
       "newArchEnabled": true,
       "versionCode": 1,
-      "package": "com.chaicafeteriaranchi.frontend"
+      "package": "com.chaicafeteriaranchi.frontend",
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
