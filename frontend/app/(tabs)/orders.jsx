@@ -1,6 +1,6 @@
 // frontend/app/(tabs)/Orders.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ActivityIndicator, FlatList, Pressable, Animated, Easing } from 'react-native';
+import { View, Text, ActivityIndicator, FlatList, Pressable, Animated, Easing, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
@@ -19,6 +19,7 @@ export default function OrdersScreen() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
   const insets = useSafeAreaInsets();
+  const bottomPadding = Platform.OS === 'ios' ? Math.max(88, insets.bottom + 88) : 24;
 
   const statusStyle = useMemo(() => ({
     'Order Placed': { bg: 'bg-[#FFF3E9]', text: 'text-chai-primary' },
@@ -128,7 +129,7 @@ export default function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-chai-bg pt-4 mt-4" style={{ paddingBottom: Math.max(16, insets.bottom + 16) }}>
+    <SafeAreaView className="flex-1 bg-chai-bg pt-4 mt-4" style={{ paddingBottom: bottomPadding }}>
       <View className="px-4 pb-2 flex-row items-center">
         <Text className="text-2xl font-bold ml-2 mr-2 flex-1 text-chai-text-primary" numberOfLines={1}>My Orders</Text>
         <Pressable onPress={fetchOrders} className="flex-row items-center gap-1 px-3 py-2 bg-chai-primary rounded-full">
@@ -139,7 +140,7 @@ export default function OrdersScreen() {
       <FlatList
         data={orders}
         keyExtractor={o => o._id || String(o.id)}
-        contentContainerStyle={{ paddingBottom: Math.max(32, insets.bottom + 100) }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View className="bg-white p-4 rounded-lg mx-4 mb-3 border border-chai-divider">

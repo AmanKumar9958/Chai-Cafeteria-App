@@ -4,10 +4,11 @@ import {
   Text, 
   Pressable, 
   FlatList, 
-  Dimensions
+  Dimensions,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
 import { useCart } from '../../context/CartContext';
@@ -39,6 +40,7 @@ const sliderImages = [
 ];
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { user: authUser } = useAuth();
   // Align with CartContext which exposes `items`
   const { items: cartItems = [] } = useCart() || {}; // Safely get cart items
@@ -50,6 +52,7 @@ export default function HomeScreen() {
 
   const sliderWidth = Dimensions.get('window').width - 48; // match p-6 (24px)
   // Carousel state moved into ImageCarousel component to avoid Home re-renders
+  const bottomPadding = Platform.OS === 'ios' ? Math.max(88, insets.bottom + 88) : 24;
 
   // Normalize incoming image URLs so they render in Android release builds
   const normalizeImageUrl = (u) => {
@@ -237,7 +240,7 @@ export default function HomeScreen() {
             ListHeaderComponent={renderHeader}
             keyboardShouldPersistTaps="always"
             keyboardDismissMode="none"
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: bottomPadding }}
             showsVerticalScrollIndicator={false}
           />
         </>

@@ -1,7 +1,8 @@
 // frontend/app/(tabs)/profile.jsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, Alert, ActivityIndicator, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
 import axios from 'axios';
@@ -11,6 +12,8 @@ const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Platform.OS === 'ios' ? Math.max(88, insets.bottom + 88) : 24;
   const { logout, userToken, refreshProfile } = useAuth();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +61,7 @@ export default function ProfileScreen() {
   const display = user || { name: '', email: '-', phone: '-', address1: '-', address2: '-' };
 
   return (
-    <SafeAreaView className="flex-1 bg-chai-bg p-6">
+    <SafeAreaView className="flex-1 bg-chai-bg p-6" style={{ paddingBottom: bottomPadding }}>
       <View className="items-center mt-2 mb-6">
         <View className="w-24 h-24 rounded-full bg-gray-100 items-center justify-center">
           <Text className="text-xl font-bold text-chai-text-primary">{(display.name || 'U').charAt(0)}</Text>

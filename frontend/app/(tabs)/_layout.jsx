@@ -2,6 +2,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Platform } from 'react-native';
 
 export default function TabLayout() {
   return (
@@ -11,21 +12,29 @@ export default function TabLayout() {
         tabBarShowLabel: true,
         tabBarActiveTintColor: '#E8751A',
         tabBarInactiveTintColor: '#757575',
-        tabBarStyle: {
-          height: 64,
-          borderTopWidth: 0,
-          backgroundColor: '#fff',
-          position: 'absolute',
-          left: '2.5%',
-          right: '2.5%',
-          bottom: 8,
-          borderRadius: 18,
-          shadowColor: '#000',
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 6,
-        },
+        // Use a floating pill on iOS; use a standard fixed bar on Android to avoid overlap/clipping
+        tabBarStyle: Platform.select({
+          ios: {
+            height: 64,
+            borderTopWidth: 0,
+            backgroundColor: '#fff',
+            position: 'absolute',
+            left: '2.5%',
+            right: '2.5%',
+            bottom: 8,
+            borderRadius: 18,
+            shadowColor: '#000',
+            shadowOpacity: 0.08,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 4 },
+          },
+          default: {
+            height: 64,
+            borderTopWidth: 0,
+            backgroundColor: '#fff',
+            elevation: 6,
+          },
+        }),
         tabBarLabelStyle: {
           fontSize: 12,
           marginBottom: 6,
