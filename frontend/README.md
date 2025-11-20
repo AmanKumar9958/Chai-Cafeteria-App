@@ -17,7 +17,7 @@
 8. Cart & Storage Model  
 9. Orders & Status Progress  
 10. Payments (Razorpay Integration)  
-11. Distance & Delivery Rules  
+11. Payment & Delivery Rules  
 12. Notifications (Local & Optional Remote)  
 13. UI/UX Conventions (Toasts, Skeletons, Images)  
 14. Reordering Logic  
@@ -33,7 +33,7 @@ This mobile app connects to the Chai Cafeteria backend API to authenticate users
 **Highlights**
 - Per‑user persistent cart (isolated by user ID / email) with guest migration.
 - Razorpay payment flow (create → present checkout → verify signature → confirm order).
-- Distance based rules ( >5 km: COD disabled; must pay online for delivery ).
+- Distance-based restrictions have been removed; COD can be available for delivery regardless of distance (subject to business policy).
 - Delivery vs Pickup logic toggling available payment methods.
 - Order status visualization & progress bar.
 - Reorder delivered items (batch add to cart).
@@ -54,7 +54,7 @@ This mobile app connects to the Chai Cafeteria backend API to authenticate users
 | Notifications | `expo-notifications`, optional remote push token registration |
 | Payments | Razorpay checkout (React Native wrapper) via backend create/verify endpoints |
 | Feedback | `react-native-toast-message` (custom theming, top placement) |
-| Location | `expo-location` (for distance checks) |
+
 
 ---
 
@@ -88,9 +88,7 @@ EXPO_PUBLIC_RAZORPAY_CREATE_PATH=/payments/razorpay/create-order   # optional ov
 EXPO_PUBLIC_RAZORPAY_VERIFY_PATH=/payments/razorpay/verify         # optional override
 EXPO_PUBLIC_ENABLE_REMOTE_PUSH=false          # true => attempt push token registration
 EXPO_PUBLIC_NOTIFICATIONS_DEBUG=false         # true => schedule one-off local test notification
-EXPO_PUBLIC_DISABLE_DISTANCE_CHECK=false      # true => bypass distance restrictions (dev only)
-EXPO_PUBLIC_CAFE_LAT=<latitude>
-EXPO_PUBLIC_CAFE_LNG=<longitude>
+
 ```
 > Changing env values requires restarting the Expo process (`npx expo start`).
 
@@ -164,13 +162,8 @@ Failure handling: signature mismatch or cancellation shows error toast; order no
 
 ---
 
-## 11. Distance & Delivery Rules
-- Uses `expo-location` to get user coordinates (permission required).
-- Computes haversine distance to cafe (lat/lng from env).
-- If distance > 5 km and order type is Delivery → enforce online prepayment (COD disabled) & show info toast.
-- Pickup logic bypasses distance fee constraints (can allow COD or free delivery rules depending on config).
-
-Debug bypass: `EXPO_PUBLIC_DISABLE_DISTANCE_CHECK=true` logs an info toast and skips validation.
+## 11. Payment & Delivery Rules
+Distance/location checks have been removed from the app. Delivery orders may use either COD or Online Payment (business can still choose to restrict COD for Pickup if desired in the UI).
 
 ---
 
@@ -209,7 +202,7 @@ Delivered order → Tap Reorder → Items mapped back into cart (keeping origina
 | Images missing (APK) | Using http:// instead of https:// | Ensure HTTPS image URLs |
 | Razorpay modal not opening | Dev build / missing native module | Use EAS dev/preview build, not Expo Go |
 | Orders list empty | Token invalid / backend scoping | Relogin; inspect network tab; verify API URL |
-| Distance always zero | Location permission denied | Accept permission prompt or enable in settings |
+
 | Scheduled notifications duplicate | Old schedule left | App code cancels existing; reinstall if persists |
 
 ---

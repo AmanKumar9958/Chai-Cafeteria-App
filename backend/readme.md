@@ -187,7 +187,7 @@ Server logic:
 | Reorder support | Item structure preserved for re-add in mobile app |
 | Timestamps | Mongoose timestamps used (`createdAt`, `updatedAt`) |
 
-Distance-based COD rule enforced client-side (server can add validation if necessary).
+Distance-based checks and COD restrictions have been removed from the client; server does not enforce distance rules.
 
 ---
 

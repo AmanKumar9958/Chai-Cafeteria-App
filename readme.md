@@ -30,12 +30,12 @@
 
 ## 1. Overview & Features
 
-The Chai Cafeteria platform enables customers to browse a menu, add items to a per‑user cart, place pickup or delivery orders (with distance and payment rules), and pay online using Razorpay. Admins can log in using a secure JWT‑based admin flow to view and update all orders. The mobile app shows order progress, supports (optional) push & scheduled local notifications, and stores carts uniquely per authenticated user.
+The Chai Cafeteria platform enables customers to browse a menu, add items to a per‑user cart, place pickup or delivery orders, and pay online using Razorpay. Admins can log in using a secure JWT‑based admin flow to view and update all orders. The mobile app shows order progress, supports (optional) push & scheduled local notifications, and stores carts uniquely per authenticated user.
 
 ### Key Features
 - User authentication with JWT (mobile) & admin JWT (separate credentials).
 - Per‑user cart isolation with migration from guest cart.
-- Delivery vs. pickup logic & distance rule (COD blocked beyond 5 km, advance payment required).
+- Delivery vs. pickup logic. Distance‑based restrictions have been removed; COD availability for delivery no longer depends on distance.
 - Razorpay integration: create order & signature verification endpoints.
 - Order status tracking: Order Placed → Packing → Shipped → Out for delivery → Delivered.
 - Admin order dashboard: list & update statuses, coupon & totals display.
@@ -59,7 +59,7 @@ The Chai Cafeteria platform enables customers to browse a menu, add items to a p
 ┌────────────────────────────────────────────────────────┐
 │                Backend API (Express)                  │
 │ Auth / Users / Menu / Orders / Coupons / Payments     │
-│  Razorpay HMAC verify | Distance logic | JWT middleware│
+│  Razorpay HMAC verify | JWT middleware                   │
 └────────┬──────────────────────────────────────────────┘
 				 │ (admin JWT)
 				 v
@@ -120,9 +120,7 @@ EXPO_PUBLIC_RAZORPAY_CREATE_PATH=/payments/razorpay/create-order  # (optional ov
 EXPO_PUBLIC_RAZORPAY_VERIFY_PATH=/payments/razorpay/verify        # (optional override)
 EXPO_PUBLIC_ENABLE_REMOTE_PUSH=false          # true to try Expo push token registration
 EXPO_PUBLIC_NOTIFICATIONS_DEBUG=false         # true schedules a 10s test notification after login
-EXPO_PUBLIC_DISABLE_DISTANCE_CHECK=false      # true bypasses distance rule (dev only)
-EXPO_PUBLIC_CAFE_LAT=<latitude>               # for distance calculations
-EXPO_PUBLIC_CAFE_LNG=<longitude>
+
 ```
 
 ### Admin (`admin/.env`)
@@ -168,7 +166,7 @@ POST `/api/admin/auth/login` with JSON `{ username, password }` → returns `{ t
 - expo-router navigation with tab layout.
 - Context providers: `AuthContext`, `CartContext` (per‑user storage key, migration from guest cart).
 - Orders screen: status progress bar, reorder option after delivery, secure filtering.
-- Checkout logic: distance checks; COD disabled > 5 km; pickup may follow different payment rule; Razorpay integration.
+- Checkout logic: COD/Online Payment selection; pickup may follow different payment rule; Razorpay integration.
 - Styled top toasts for success/error/info.
 - Image performance via `expo-image` + skeleton loaders.
 - Daily notification scheduling + optional debug test notification.
@@ -205,7 +203,7 @@ Mobile configuration uses `EXPO_PUBLIC_RAZORPAY_KEY_ID` (public key). Backend ho
 |---------|----------------|
 | User scope | Backend queries `Order.find({ user: userId })`; client also filters defensively. |
 | Cart storage | Key: `cart_<userKey>` where userKey = user._id/email; migrates from legacy `cart_guest`. |
-| Distance rule | If >5 km → show info toast; COD disabled; require online payment. |
+| Distance rule | Removed — COD availability for delivery is not distance‑based. |
 | Delivery vs Pickup | Payment method constraints adjusted (pickup can allow COD within policy). |
 | Totals | Server & client compute; client sanitizes numeric fields before display. |
 | Status progression | Visual progress bar (five steps) + admin manual updates. |

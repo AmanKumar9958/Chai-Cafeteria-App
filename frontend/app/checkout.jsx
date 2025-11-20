@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -67,11 +67,7 @@ export default function CheckoutScreen() {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [checkingDistance, setCheckingDistance] = useState(false);
-  const [distanceKm, setDistanceKm] = useState(null); // number | null
-  const [deliveryAllowed, setDeliveryAllowed] = useState(null); // boolean | null (unknown)
-  const [outsideRadius, setOutsideRadius] = useState(false); // true when distance > radius
-  const [showOutOfRadiusModal, setShowOutOfRadiusModal] = useState(false);
+  // Distance/location feature removed: no checks, no restrictions based on distance
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, type, value, discount, freeDelivery }
   const [couponMessage, setCouponMessage] = useState('');
@@ -86,8 +82,6 @@ export default function CheckoutScreen() {
     return { subtotal, delivery, discount, total };
   }, [items, type, appliedCoupon]);
 
-  const DISABLE_DISTANCE_CHECK = String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '').toLowerCase() === 'true' || String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '') === '1';
-
   const canSubmit = useMemo(() => {
     if (items.length === 0) return false;
     if (!name.trim()) return false;
@@ -95,84 +89,11 @@ export default function CheckoutScreen() {
     if (type === 'Delivery') {
       if (!address1.trim()) return false;
       if (!/^[0-9]{4,6}$/.test(pincode)) return false;
-      // If we checked distance and it's not allowed, prevent submission
-      if (!DISABLE_DISTANCE_CHECK && deliveryAllowed === false) return false;
     }
     return true;
-  }, [items.length, name, phone, type, address1, pincode, deliveryAllowed, DISABLE_DISTANCE_CHECK]);
+  }, [items.length, name, phone, type, address1, pincode]);
 
-  // Cafe coordinates and radius (km)
-  const DELIVERY_RADIUS_KM = Number(process.env.EXPO_PUBLIC_DELIVERY_RADIUS_KM || 5);
-  const CAFE_LAT = Number(process.env.EXPO_PUBLIC_CAFE_LAT || 0);
-  const CAFE_LNG = Number(process.env.EXPO_PUBLIC_CAFE_LNG || 0);
-
-  const cafeCoordsAvailable = Number.isFinite(CAFE_LAT) && Number.isFinite(CAFE_LNG) && (CAFE_LAT !== 0 || CAFE_LNG !== 0);
-
-  const haversineKm = (lat1, lon1, lat2, lon2) => {
-    const toRad = (d) => (d * Math.PI) / 180;
-    const R = 6371; // Earth radius in km
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const checkDeliveryEligibility = async () => {
-    if (String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '').toLowerCase() === 'true' || String(process.env.EXPO_PUBLIC_DISABLE_DISTANCE_CHECK || '') === '1') {
-      setDeliveryAllowed(true);
-      setOutsideRadius(false);
-      setDistanceKm(null);
-      Toast.show({ type: 'info', text1: 'Distance check bypassed', text2: 'EXPO_PUBLIC_DISABLE_DISTANCE_CHECK is enabled' });
-      return;
-    }
-    if (!cafeCoordsAvailable) {
-      Toast.show({ type: 'error', text1: 'Cafe location not set', text2: 'Set EXPO_PUBLIC_CAFE_LAT/LNG in your env' });
-      return;
-    }
-    setCheckingDistance(true);
-    try {
-      // Dynamically import to avoid route evaluation failure if native module isn't built yet
-      const LocMod = await import('expo-location');
-      const Loc = (LocMod && LocMod.default) ? LocMod.default : LocMod; // support both CJS/ESM shapes
-      const permFn = Loc.requestForegroundPermissionsAsync || Loc.requestPermissionsAsync;
-      if (typeof permFn !== 'function') {
-        throw new Error('Location module not fully available. Rebuild the Dev Client after installing expo-location.');
-      }
-      const { status } = await permFn();
-      if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Location permission required', text2: 'Enable location to check delivery eligibility' });
-        setDeliveryAllowed(null);
-        return;
-      }
-      const accuracy = (Loc.Accuracy && Loc.Accuracy.Balanced) ? Loc.Accuracy.Balanced : undefined;
-      const pos = await Loc.getCurrentPositionAsync({ accuracy });
-      const userLat = pos?.coords?.latitude;
-      const userLng = pos?.coords?.longitude;
-      if (!Number.isFinite(userLat) || !Number.isFinite(userLng)) throw new Error('Unable to read current location');
-      const km = haversineKm(userLat, userLng, CAFE_LAT, CAFE_LNG);
-      setDistanceKm(km);
-      const outside = km > DELIVERY_RADIUS_KM;
-      setOutsideRadius(outside);
-      // Delivery is still allowed beyond 5km, but COD is not.
-      setDeliveryAllowed(true);
-      if (outside) {
-        // If user chose Delivery and COD, switch to Online Payment
-        if (type === 'Delivery' && payment === 'COD') setPayment('Online Payment');
-        Toast.show({ type: 'info', text1: `You are ${km.toFixed(1)} km away`, text2: 'More than 5 km, pay in advance only, no COD for delivery.' });
-        setShowOutOfRadiusModal(true);
-      } else {
-        Toast.show({ type: 'success', text1: `You are ${km.toFixed(1)} km away`, text2: 'Delivery available with COD or Online Payment' });
-      }
-    } catch (err) {
-      console.error('Distance check failed', err?.message || err);
-      Toast.show({ type: 'error', text1: 'Could not check distance', text2: String(err?.message || 'Try again.') });
-      setDeliveryAllowed(null);
-      setOutsideRadius(false);
-    } finally {
-      setCheckingDistance(false);
-    }
-  };
+  // All delivery eligibility and distance checking code has been removed.
 
   const placeOrder = async () => {
     if (!canSubmit) return;
@@ -432,16 +353,14 @@ export default function CheckoutScreen() {
           <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Order Type</Text>
           <View className="flex-row bg-[#FFF3E9] rounded-xl p-1">
             {['Pickup', 'Delivery'].map(opt => {
-              const disabled = opt === 'Delivery' && deliveryAllowed === false;
+              const disabled = false;
               return (
               <Pressable
                 key={opt}
                 onPress={() => {
                   if (disabled) return;
                   setType(opt);
-                  if (opt === 'Delivery') {
-                    checkDeliveryEligibility();
-                  } else if (opt === 'Pickup') {
+                  if (opt === 'Pickup') {
                     // Business rule: Pickup always requires advance payment
                     setPayment('Online Payment');
                   }
@@ -452,17 +371,7 @@ export default function CheckoutScreen() {
               </Pressable>
             );})}
           </View>
-          <View className="mt-2">
-            {deliveryAllowed === null && (
-              <Text className="text-xs text-chai-text-secondary">Tap Delivery to check eligibility based on your current location.</Text>
-            )}
-            {deliveryAllowed === true && !outsideRadius && (
-              <Text className="text-xs text-chai-success">Within {DELIVERY_RADIUS_KM} km radius. Delivery available.</Text>
-            )}
-            {deliveryAllowed === true && outsideRadius && (
-              <Text className="text-xs text-amber-700">More than {DELIVERY_RADIUS_KM} km — pay in advance only, no COD for delivery.</Text>
-            )}
-          </View>
+          
         </View>
 
         {/* Coupon */}
@@ -540,12 +449,6 @@ export default function CheckoutScreen() {
               className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary"
               returnKeyType="done"
             />
-            <Pressable onPress={checkDeliveryEligibility} disabled={checkingDistance} className={`mt-3 px-4 py-3 rounded-xl ${checkingDistance ? 'bg-gray-300' : 'bg-chai-primary'}`}>
-              <Text className="text-white font-medium">{checkingDistance ? 'Checking distance…' : 'Check delivery eligibility'}</Text>
-            </Pressable>
-            {Number.isFinite(distanceKm) && (
-              <Text className="mt-2 text-xs text-chai-text-secondary">You are approximately {distanceKm.toFixed(2)} km from the cafe.</Text>
-            )}
           </View>
         )}
 
@@ -554,10 +457,10 @@ export default function CheckoutScreen() {
           <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Payment Method</Text>
           <View className="flex-row bg-[#FFF3E9] rounded-xl p-1">
             {['Online Payment', 'COD'].map(opt => {
-              // COD disabled when Pickup (advance required) or Delivery + outside radius
-              const codDisabled = (type === 'Pickup') || (type === 'Delivery' && outsideRadius === true);
+              // COD disabled only for Pickup per business rule
+              const codDisabled = (type === 'Pickup');
               const disabled = (opt === 'COD') && codDisabled;
-              const hidden = (opt === 'COD') && codDisabled; // hide COD for delivery when outside radius
+              const hidden = false; // never hide COD for delivery
               if (hidden) return null;
               return (
                 <Pressable key={opt} onPress={() => !disabled && setPayment(opt)} className={`flex-1 py-3 rounded-xl ${payment === opt ? 'bg-chai-primary' : ''} ${disabled ? 'opacity-40' : ''}`}>
@@ -571,9 +474,6 @@ export default function CheckoutScreen() {
           )}
           {type === 'Pickup' && (
             <Text className="mt-2 text-xs text-red-600">Pickup requires advance payment — no COD.</Text>
-          )}
-          {type === 'Delivery' && outsideRadius && (
-            <Text className="mt-2 text-xs text-red-600">More than {DELIVERY_RADIUS_KM} km, pay in advance only — no COD for delivery.</Text>
           )}
           <TextInput value={note} onChangeText={setNote} placeholderTextColor="#757575" placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" returnKeyType="done" />
         </View>
@@ -589,24 +489,7 @@ export default function CheckoutScreen() {
               <Text className="text-white font-semibold">{paying ? 'Processing payment…' : (submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`)}</Text>
         </Pressable>
       </View>
-
-      {/* Out of radius popup */}
-      <Modal visible={showOutOfRadiusModal} transparent animationType="fade" onRequestClose={() => setShowOutOfRadiusModal(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <View style={{ width: '100%', backgroundColor: 'white', borderRadius: 18, padding: 20, borderWidth: 1, borderColor: '#E5E7EB' }}>
-            <Text className="text-xl font-bold text-chai-text-primary mb-1">More than {DELIVERY_RADIUS_KM} km</Text>
-            <Text className="text-chai-text-secondary mb-4">You are {Number.isFinite(distanceKm) ? distanceKm.toFixed(1) : 'far'} km away. Pay in advance only — no COD for delivery.</Text>
-            <View className="flex-row gap-3">
-              <Pressable onPress={() => { setShowOutOfRadiusModal(false); checkDeliveryEligibility(); }} className="flex-1 py-3 rounded-xl bg-gray-200 items-center">
-                <Text className="text-gray-800 font-medium">Retry Location</Text>
-              </Pressable>
-              <Pressable onPress={() => { setType('Delivery'); setPayment('Online Payment'); setShowOutOfRadiusModal(false); }} className="flex-1 py-3 rounded-xl bg-chai-primary items-center">
-                <Text className="text-white font-medium">Continue: Delivery (Advance)</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      
     </SafeAreaView>
   );
 }
