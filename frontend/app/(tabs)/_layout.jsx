@@ -5,48 +5,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import CustomTabBar from '../../components/CustomTabBar';
+
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   return (
     <Tabs
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: true,
-        tabBarActiveTintColor: '#E8751A',
-        tabBarInactiveTintColor: '#757575',
-        // Use a floating pill on iOS; use a standard fixed bar on Android to avoid overlap/clipping
-        tabBarStyle: Platform.select({
-          ios: {
-            height: 64 + insets.bottom,
-            paddingBottom: insets.bottom,
-            borderTopWidth: 0,
-            backgroundColor: '#fff',
-            position: 'absolute',
-            left: '2.5%',
-            right: '2.5%',
-            bottom: 8 + insets.bottom,
-            borderRadius: 18,
-            shadowColor: '#000',
-            shadowOpacity: 0.08,
-            shadowRadius: 8,
-            shadowOffset: { width: 0, height: 4 },
-          },
-          default: {
-            height: 64 + insets.bottom,
-            paddingBottom: insets.bottom,
-            borderTopWidth: 0,
-            backgroundColor: '#fff',
-            elevation: 6,
-          },
-        }),
-        tabBarHideOnKeyboard: true,
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginBottom: 6,
-        },
-        tabBarItemStyle: {
-          paddingTop: 8,
-        },
       }}
     >
       <Tabs.Screen

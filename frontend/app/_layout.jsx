@@ -58,8 +58,8 @@ function MainLayout() {
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="login" />
-        <Stack.Screen name="register" />
+        <Stack.Screen name="login" options={{ animation: 'fade' }} />
+        <Stack.Screen name="register" options={{ animation: 'fade' }} />
         <Stack.Screen name="verify-otp" />
         <Stack.Screen name="(tabs)" />
       </Stack>

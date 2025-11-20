@@ -1,6 +1,7 @@
 // frontend/app/register.jsx
 import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator, Image, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import axios from 'axios';
@@ -19,6 +20,7 @@ export default function RegisterScreen() {
     const [address1, setAddress1] = useState('');
     const [address2, setAddress2] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Refs for auto-advance between fields
     const nameRef = useRef(null);
@@ -92,19 +94,24 @@ export default function RegisterScreen() {
                         onSubmitEditing={() => passwordRef.current?.focus()}
                         blurOnSubmit={false}
                     />
-                    <TextInput
-                        ref={passwordRef}
-                        className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary"
-                        placeholderTextColor="#757575"
-                        placeholder="Password"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        autoCapitalize='none'
-                        returnKeyType="next"
-                        onSubmitEditing={() => address1Ref.current?.focus()}
-                        blurOnSubmit={false}
-                    />
+                    <View className="flex-row items-center border border-chai-divider rounded-xl mb-6">
+                        <TextInput
+                            ref={passwordRef}
+                            className="flex-1 p-4 text-lg text-chai-text-primary"
+                            placeholderTextColor="#757575"
+                            placeholder="Password"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword}
+                            autoCapitalize='none'
+                            returnKeyType="next"
+                            onSubmitEditing={() => address1Ref.current?.focus()}
+                            blurOnSubmit={false}
+                        />
+                        <Pressable onPress={() => setShowPassword(!showPassword)} className="p-4">
+                            <Feather name={showPassword ? 'eye-off' : 'eye'} size={24} color="#757575" />
+                        </Pressable>
+                    </View>
                     <TextInput
                         ref={address1Ref}
                         className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
@@ -138,7 +145,7 @@ export default function RegisterScreen() {
                     </Pressable>
 
                     <View className="flex-row justify-center mt-6">
-                        <Text className="text-chai-text-secondary">Already have an account? </Text>
+                        <Text className="text-chai-text-secondary text-lg">Already have an account? </Text>
                         <Link href="/login"><Text className="text-chai-primary font-bold p-2">Login</Text></Link>
                     </View>
                 </ScrollView>

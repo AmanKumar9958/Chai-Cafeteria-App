@@ -64,7 +64,7 @@ export default function ProfileScreen() {
     <SafeAreaView className="flex-1 bg-chai-bg p-6" style={{ paddingBottom: bottomPadding }}>
       <View className="items-center mt-2 mb-6">
         <View className="w-24 h-24 rounded-full bg-gray-100 items-center justify-center">
-          <Text className="text-xl font-bold text-chai-text-primary">{(display.name || 'U').charAt(0)}</Text>
+          <Text className="text-4xl font-bold text-chai-text-primary">{(display.name || 'U').charAt(0)}</Text>
         </View>
       </View>
 

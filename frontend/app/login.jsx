@@ -1,6 +1,7 @@
 // frontend/app/login.jsx
 import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator, Image } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +11,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
@@ -43,18 +45,23 @@ export default function LoginScreen() {
           onSubmitEditing={() => passwordRef.current?.focus()}
           blurOnSubmit={false}
         />
-        <TextInput
-          ref={passwordRef}
-          className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary"
-          placeholder="Password"
-          placeholderTextColor="#757575"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize='none'
-          returnKeyType="done"
-          onSubmitEditing={handleLogin}
-        />
+        <View className="flex-row items-center border border-chai-divider rounded-xl mb-6">
+          <TextInput
+            ref={passwordRef}
+            className="flex-1 p-4 text-lg text-chai-text-primary"
+            placeholder="Password"
+            placeholderTextColor="#757575"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            autoCapitalize='none'
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
+          />
+          <Pressable onPress={() => setShowPassword(!showPassword)} className="p-4">
+            <Feather name={showPassword ? 'eye-off' : 'eye'} size={24} color="#757575" />
+          </Pressable>
+        </View>
 
         <Pressable
           onPress={handleLogin}
@@ -69,7 +76,7 @@ export default function LoginScreen() {
         </Pressable>
 
         <View className="flex-row justify-center mt-6">
-          <Text className="text-chai-text-secondary">Don&apos;t have an account? </Text>
+          <Text className="text-chai-text-secondary text-lg">Don&apos;t have an account? </Text>
           <Link href="/register">
             <Text className="text-chai-primary font-bold">Sign Up</Text>
           </Link>
