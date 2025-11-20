@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, memo } from 'react';
-import { View, Text, TextInput, FlatList, SectionList, Pressable, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
+import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message'; 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.repla
 
 export default function MenuScreen() {
   const insets = useSafeAreaInsets();
-  const bottomPad = Math.max(24, insets.bottom + 90); // ensure last row clears floating tab bar
+  const bottomPadding = Math.max(24, insets.bottom + 90); // ensure last row clears floating tab bar
   // Get the categoryId passed from the previous screen
   const { categoryId, search: incomingSearch } = useLocalSearchParams(); 
   
@@ -29,10 +29,19 @@ export default function MenuScreen() {
   const [selected, setSelected] = useState(initialCategory);
   const [items, setItems] = useState([]);
   const [isLoadingCats, setIsLoadingCats] = useState(true);
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
+  const [isLoadingItems, setIsLoadingItems] = useState(true); // Start with true
   const { addItem, items: itemsInCart } = useCart();
 
   const catsRef = useRef(null); // Ref for the horizontal category FlatList
+
+  const handleSelectCategory = (categoryId) => {
+    if (selected === categoryId) return; // Do nothing if already selected
+    setQuery(''); // Clear search when changing category
+    setDebouncedQuery('');
+    setSelected(categoryId);
+    setItems([]); // Clear items immediately for responsiveness
+    setIsLoadingItems(true);
+  };
 
   const normalizeImageUrl = (u) => {
     try {
@@ -73,8 +82,11 @@ export default function MenuScreen() {
   useEffect(() => {
     if (categoryId) {
       setSelected(categoryId);
+    } else if (incomingSearch === undefined) {
+      // If no categoryId is provided and we are not searching, reset to 'all'
+      setSelected('all');
     }
-  }, [categoryId]);
+  }, [categoryId, incomingSearch]);
 
   // If routed here with a search query from Home, seed the search box
   useEffect(() => {
@@ -97,7 +109,7 @@ export default function MenuScreen() {
             viewPosition: 0.5, // Try to center the item
           });
       } catch (e) {
-         console.warn("Failed to scroll category list:", e);
+          console.warn("Failed to scroll category list:", e);
          // Fallback or alternative scroll method if scrollToIndex fails
          // const ITEM_WIDTH = 108; // Approximate width + margin
          // const offset = Math.max(0, index * ITEM_WIDTH - ITEM_WIDTH / 2); // Center attempt
@@ -144,7 +156,7 @@ export default function MenuScreen() {
   const renderCategory = ({ item, index }) => (
     // Added padding, fixed width/height for better consistency
     <Pressable 
-      onPress={() => setSelected(item._id)} 
+      onPress={() => handleSelectCategory(item._id)} 
       className={`p-3 mr-3 rounded-lg items-center justify-center border ${selected === item._id ? 'bg-chai-primary border-chai-primary' : 'bg-white border-chai-divider'}`} 
       style={{ minWidth: 96, height: 48 }} // Ensure consistent size
     >
@@ -178,7 +190,7 @@ export default function MenuScreen() {
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
               cachePolicy="memory-disk"
-              transition={200}
+              transition={0}
               onLoadEnd={() => setLoaded(true)}
             />
           </View>
@@ -206,38 +218,40 @@ export default function MenuScreen() {
 
   const renderItemCard = ({ item }) => <ItemCard item={item} />;
 
-  // Render a row containing up to two item cards
-  const renderRow = ({ item: row }) => {
-    const [left, right] = row;
-    return (
-      <View className="flex-row">
-        {left && renderItemCard({ item: left })}
-        {right ? renderItemCard({ item: right }) : <View style={{ flex: 1, padding: 8 }} />}
-      </View>
-    );
-  };
-
-
-  // Build two-column rows for SectionList
-  const rows = [];
-  for (let i = 0; i < items.length; i += 2) {
-    rows.push([items[i], items[i + 1] || null]);
-  }
-  const sections = [{ title: 'menu', data: rows }];
+  // Build two-column rows for SectionList (memoized to avoid remounting images while typing)
+  const sections = useMemo(() => [{ title: 'menu', data: items }], [items]);
 
   return (
   <SafeAreaView className="flex-1 bg-chai-bg pt-5">
-      <SectionList
-        sections={sections}
-        keyExtractor={(row, index) => {
-          const [a, b] = row;
-          return `${a?._id || 'empty'}_${b?._id || 'empty'}_${index}`;
-        }}
-        renderItem={renderRow}
-        stickySectionHeadersEnabled={true}
-        renderSectionHeader={() => (
+      {/* Search bar extracted from SectionList header to prevent list re-render on each keystroke */}
+      <View className="px-4 mb-2">
+        <View className="flex-row items-center bg-white rounded-full px-4 py-3 shadow-sm border border-chai-divider">
+          <Feather name="search" size={20} color="#9CA3AF" className="mr-3" />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search items..."
+            placeholderTextColor="#757575"
+            className="flex-1 text-[15px] text-chai-text-primary"
+            clearButtonMode="while-editing"
+            returnKeyType="search"
+            onSubmitEditing={() => setDebouncedQuery(query)}
+          />
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery('')} className="p-1">
+              <Feather name="x-circle" size={20} color="#9CA3AF" />
+            </Pressable>
+          )}
+        </View>
+      </View>
+      <FlatList
+        data={items}
+        renderItem={renderItemCard}
+        keyExtractor={(item) => item._id}
+        numColumns={2}
+        ListHeaderComponent={
           !isLoadingCats && categories.length > 0 ? (
-            <View style={{ height: 64, backgroundColor: 'white' }}>
+            <View style={{ height: 64, backgroundColor: 'transparent' }}>
               <FlatList
                 ref={catsRef}
                 data={categories}
@@ -256,27 +270,8 @@ export default function MenuScreen() {
               <ActivityIndicator size="small" color="#C7A27C" />
             </View>
           )
-        )}
-        ListHeaderComponent={(
-          <View className="px-4 mb-2">
-            <View className="flex-row items-center bg-white rounded-full p-3 shadow-sm border border-chai-divider">
-              <Feather name="search" size={20} color="#9CA3AF" className="mr-3" />
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Search items..."
-                placeholderTextColor="#757575"
-                className="flex-1 text-lg text-chai-text-primary"
-                clearButtonMode="while-editing"
-              />
-              {query.length > 0 && (
-                <Pressable onPress={() => setQuery('')} className="p-1">
-                  <Feather name="x-circle" size={20} color="#9CA3AF" />
-                </Pressable>
-              )}
-            </View>
-          </View>
-        )}
+        }
+        // Header removed; search now above list
         ListEmptyComponent={isLoadingItems ? (
           <View style={{ paddingHorizontal: 8, paddingVertical: 16 }}>
             {/* Skeleton grid: two columns, three rows */}
@@ -317,7 +312,7 @@ export default function MenuScreen() {
             </Pressable>
           </View>
         )}
-        contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: bottomPad }}
+        contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: bottomPadding }}
         showsVerticalScrollIndicator={false}
       />
       {itemsInCart.length > 0 && (

@@ -88,7 +88,7 @@ export default function CartScreen() {
             </View>
 
             <View className="p-4">
-              <Pressable onPress={() => router.push('/checkout')} className="bg-chai-primary p-4 rounded items-center">
+              <Pressable onPress={() => router.push('/checkout')} className="bg-chai-primary p-4 rounded-xl items-center">
                 <Text className="text-white font-bold">Checkout</Text>
               </Pressable>
 

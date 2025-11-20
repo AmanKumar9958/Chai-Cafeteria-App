@@ -113,14 +113,14 @@ export default function HomeScreen() {
         autoPlay
         onPressSlide={(i, img) => {
           // Navigate to Menu; could be extended to deep-links per slide later
-          router.push('/(tabs)/menu');
+          router.push({ pathname: '/(tabs)/menu', params: { categoryId: 'all' } });
         }}
       />
 
       {/* Categories Title */}
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-2xl font-bold text-chai-text-primary">Categories</Text>
-        <Pressable onPress={() => router.push('/(tabs)/menu')} className="px-2 py-1">
+        <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: 'all' } })} className="px-2 py-1">
           <Text className="text-sm text-chai-primary font-semibold" numberOfLines={1}>See all</Text>
         </Pressable>
       </View>
@@ -150,7 +150,7 @@ export default function HomeScreen() {
             style={{ width: '100%', height: '100%' }}
             contentFit="cover"
             cachePolicy="memory-disk"
-            transition={200}
+            transition={0}
             onLoadEnd={() => setLoaded(true)}
           />
           {/* Bottom overlay for readability */}

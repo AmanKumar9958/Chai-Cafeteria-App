@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 
 const SearchBarBase = ({ value, onChange, onSubmit, onClear, placeholder = 'Search for chai, snacks...' }, ref) => {
   return (
-    <View className="flex-row items-center bg-white rounded-full p-4 mb-6 shadow-sm border border-chai-divider">
+    <View className="flex-row items-center bg-white rounded-full px-4 py-3 mb-5 shadow-sm border border-chai-divider">
       <Feather name="search" size={20} color="#9CA3AF" />
       <TextInput
         ref={ref}
@@ -14,7 +14,7 @@ const SearchBarBase = ({ value, onChange, onSubmit, onClear, placeholder = 'Sear
         onSubmitEditing={onSubmit}
         returnKeyType="search"
         blurOnSubmit={false}
-        className="flex-1 text-base text-chai-text-primary ml-3"
+        className="flex-1 text-[15px] text-chai-text-primary ml-3"
         placeholderTextColor="#9CA3AF"
       />
       {!!value && value.length > 0 && (
