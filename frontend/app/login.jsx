@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -15,6 +16,7 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
+  const { t } = useTranslation();
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -28,14 +30,14 @@ export default function LoginScreen() {
       <View className="flex-1 justify-center p-8">
         <View className="items-center mb-10">
           <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
-          <Text className="text-3xl font-bold mt-4 text-chai-text-primary">Welcome Back!</Text>
-          <Text className="text-chai-text-secondary mt-2 font-semibold">Login to your account</Text>
+          <Text className="text-3xl font-bold mt-4 text-chai-text-primary">{t('app.welcome_back')}</Text>
+          <Text className="text-chai-text-secondary mt-2 font-semibold">{t('app.login_to_account')}</Text>
         </View>
 
         <TextInput
           ref={emailRef}
           className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
-          placeholder="Email Address"
+          placeholder={t('app.email')}
           placeholderTextColor="#757575"
           value={email}
           onChangeText={setEmail}
@@ -49,7 +51,7 @@ export default function LoginScreen() {
           <TextInput
             ref={passwordRef}
             className="flex-1 p-4 text-lg text-chai-text-primary"
-            placeholder="Password"
+            placeholder={t('app.password')}
             placeholderTextColor="#757575"
             value={password}
             onChangeText={setPassword}
@@ -71,14 +73,18 @@ export default function LoginScreen() {
           {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white text-lg font-bold">Login</Text>
+            <Text className="text-white text-lg font-bold">{t('app.login')}</Text>
           )}
         </Pressable>
 
-        <View className="flex-row justify-center mt-6">
-          <Text className="text-chai-text-secondary text-lg">Don&apos;t have an account? </Text>
+        <View className="flex-row justify-end mt-3">
+          <Link href="/forgot-password"><Text className="text-chai-primary font-semibold">{t('app.forgot_password')}</Text></Link>
+        </View>
+
+        <View className="flex-row justify-center items-center mt-6">
+          <Text className="text-chai-text-secondary text-lg">{t('app.dont_have_account')}</Text>
           <Link href="/register">
-            <Text className="text-chai-primary font-bold">Sign Up</Text>
+            <Text className="text-chai-primary font-bold">{t('app.signup')}</Text>
           </Link>
         </View>
       </View>

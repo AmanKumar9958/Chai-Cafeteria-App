@@ -7,6 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
+import { setLanguage } from '../../i18n';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
@@ -19,6 +21,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', address1: '', address2: '' });
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -44,9 +47,9 @@ export default function ProfileScreen() {
   }, [userToken]);
 
   const confirmLogout = () => {
-    Alert.alert('Confirm logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => logout() },
+    Alert.alert(t('app.confirm_logout'), t('app.are_you_sure_logout'), [
+      { text: t('app.cancel'), style: 'cancel' },
+      { text: t('app.logout'), style: 'destructive', onPress: () => logout() },
     ]);
   };
 
@@ -73,28 +76,28 @@ export default function ProfileScreen() {
           <>
             <View className="flex-row items-center mb-4">
               <View className="flex-1">
-                <Text className="text-sm text-chai-text-secondary">Full Name</Text>
+                <Text className="text-sm text-chai-text-secondary">{t('app.full_name')}</Text>
                 <Text className="text-lg font-bold text-chai-text-primary">{display.name}</Text>
               </View>
             </View>
 
             <View className="flex-row items-center mb-4">
               <View className="flex-1">
-                <Text className="text-sm text-chai-text-secondary">Email</Text>
+                <Text className="text-sm text-chai-text-secondary">{t('app.email')}</Text>
                 <Text className="text-base text-chai-text-primary">{display.email}</Text>
               </View>
             </View>
 
             <View className="flex-row items-center mb-4">
               <View className="flex-1">
-                <Text className="text-sm text-chai-text-secondary">Phone number</Text>
+                <Text className="text-sm text-chai-text-secondary">{t('app.phone')}</Text>
                 <Text className="text-base text-chai-text-primary">{display.phone || '-'}</Text>
               </View>
             </View>
 
             <View className="flex-row items-center mb-4">
               <View className="flex-1">
-                <Text className="text-sm text-chai-text-secondary">Address 1 - (Home)</Text>
+                <Text className="text-sm text-chai-text-secondary">{t('app.address1')}</Text>
                 <Text className="text-base text-chai-text-primary">{display.address1 || '-'}</Text>
               </View>
             </View>
@@ -102,22 +105,22 @@ export default function ProfileScreen() {
         ) : (
           <>
             <View className="mb-4">
-              <Text className="text-sm text-chai-text-secondary">Full Name</Text>
+              <Text className="text-sm text-chai-text-secondary">{t('app.full_name')}</Text>
               <TextInput value={form.name} onChangeText={v => setForm(prev => ({ ...prev, name: v }))} className="border border-chai-divider rounded-xl p-3 mt-1 bg-white text-chai-text-primary" />
             </View>
 
             <View className="mb-4">
-              <Text className="text-sm text-chai-text-secondary">Phone number</Text>
+              <Text className="text-sm text-chai-text-secondary">{t('app.phone')}</Text>
               <TextInput value={form.phone} onChangeText={v => setForm(prev => ({ ...prev, phone: v }))} className="border border-chai-divider rounded-xl p-3 mt-1 bg-white text-chai-text-primary" keyboardType="phone-pad" />
             </View>
 
             <View className="mb-4">
-              <Text className="text-sm text-chai-text-secondary">Address 1 - (Home)</Text>
+              <Text className="text-sm text-chai-text-secondary">{t('app.address1')}</Text>
               <TextInput value={form.address1} onChangeText={v => setForm(prev => ({ ...prev, address1: v }))} className="border border-chai-divider rounded-xl p-3 mt-1 bg-white text-chai-text-primary" />
             </View>
 
             <View className="mb-4">
-              <Text className="text-sm text-chai-text-secondary">Address 2 - (Work)</Text>
+              <Text className="text-sm text-chai-text-secondary">{t('app.address2')}</Text>
               <TextInput value={form.address2} onChangeText={v => setForm(prev => ({ ...prev, address2: v }))} className="border border-chai-divider rounded-xl p-3 mt-1 bg-white text-chai-text-primary" />
             </View>
           </>
@@ -126,7 +129,7 @@ export default function ProfileScreen() {
 
       {!isEditing ? (
         <Pressable onPress={() => setIsEditing(true)} className="mt-6 border-2 border-chai-primary rounded-xl p-4 items-center">
-          <Text className="text-chai-primary font-bold">Edit Profile</Text>
+          <Text className="text-chai-primary font-bold">{t('app.edit_profile')}</Text>
         </Pressable>
       ) : (
         <View className="mt-6">
@@ -145,20 +148,33 @@ export default function ProfileScreen() {
               Toast.show({ type: 'error', text1: 'Update failed', text2: String(msg) });
             }
           }} className="border-2 border-chai-primary rounded-xl p-4 items-center">
-            <Text className="text-chai-primary font-bold">Save Changes</Text>
+            <Text className="text-chai-primary font-bold">{t('app.save_changes')}</Text>
           </Pressable>
 
           <Pressable onPress={() => { setIsEditing(false); setForm({ name: user?.name || '', phone: user?.phone || '', address1: user?.address1 || '', address2: user?.address2 || '' }); }} className="mt-4 border-2 border-chai-divider rounded-xl p-4 items-center">
-            <Text className="text-chai-text-secondary">Cancel</Text>
+            <Text className="text-chai-text-secondary">{t('app.cancel')}</Text>
           </Pressable>
         </View>
       )}
 
       {!!user && (
         <Pressable onPress={confirmLogout} className="mt-4 bg-chai-primary rounded-xl p-4 items-center">
-          <Text className="text-white font-bold">Logout</Text>
+          <Text className="text-white font-bold">{t('app.logout')}</Text>
         </Pressable>
       )}
+
+      {/* Language switcher */}
+      <View className="mt-6">
+        <Text className="text-chai-text-secondary mb-2">{t('app.language')}</Text>
+        <View className="flex-row gap-3">
+          <Pressable onPress={() => setLanguage('en')} className={`px-4 py-2 rounded-xl border ${i18n.language.startsWith('en') ? 'border-chai-primary' : 'border-chai-divider'}`}>
+            <Text className={`${i18n.language.startsWith('en') ? 'text-chai-primary' : 'text-chai-text-primary'}`}>{t('app.english')}</Text>
+          </Pressable>
+          <Pressable onPress={() => setLanguage('hi')} className={`px-4 py-2 rounded-xl border ${i18n.language.startsWith('hi') ? 'border-chai-primary' : 'border-chai-divider'}`}>
+            <Text className={`${i18n.language.startsWith('hi') ? 'text-chai-primary' : 'text-chai-text-primary'}`}>{t('app.hindi')}</Text>
+          </Pressable>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }

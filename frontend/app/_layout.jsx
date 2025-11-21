@@ -1,4 +1,5 @@
 import "../global.css"; // Import your global styles
+import '../i18n'; // initialize i18n
 // frontend/app/_layout.jsx
 import React, { useEffect, useState } from 'react';
 import { Stack, router } from 'expo-router';
@@ -61,6 +62,8 @@ function MainLayout() {
         <Stack.Screen name="login" options={{ animation: 'fade' }} />
         <Stack.Screen name="register" options={{ animation: 'fade' }} />
         <Stack.Screen name="verify-otp" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="reset-password" />
         <Stack.Screen name="(tabs)" />
       </Stack>
       {showSplash && (

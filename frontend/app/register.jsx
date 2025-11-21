@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 // Get this from your AuthContext file
 // Normalize API base: allow EXPO_PUBLIC_API_URL with or without trailing "/api" or "/"
@@ -21,6 +22,7 @@ export default function RegisterScreen() {
     const [address2, setAddress2] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const { t } = useTranslation();
 
     // Refs for auto-advance between fields
     const nameRef = useRef(null);
@@ -52,15 +54,15 @@ export default function RegisterScreen() {
                 <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 32 }} keyboardShouldPersistTaps="handled">
                     <View className="items-center mb-6">
                         <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
-                        <Text className="text-3xl font-bold mt-4 text-chai-text-primary">Welcome</Text>
-                        <Text className="text-chai-text-secondary mt-2 font-semibold">Create your account</Text>
+                        <Text className="text-3xl font-bold mt-4 text-chai-text-primary">{t('app.welcome')}</Text>
+                        <Text className="text-chai-text-secondary mt-2 font-semibold">{t('app.create_account')}</Text>
                     </View>
 
                     <TextInput
                         ref={nameRef}
                         className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
                         placeholderTextColor="#757575"
-                        placeholder="Full Name"
+                        placeholder={t('app.full_name')}
                         value={name}
                         onChangeText={setName}
                         autoCapitalize='words'
@@ -72,7 +74,7 @@ export default function RegisterScreen() {
                         ref={emailRef}
                         className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
                         placeholderTextColor="#757575"
-                        placeholder="Email"
+                        placeholder={t('app.email')}
                         value={email}
                         onChangeText={setEmail}
                         keyboardType="email-address"
@@ -85,7 +87,7 @@ export default function RegisterScreen() {
                         ref={phoneRef}
                         className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
                         placeholderTextColor="#757575"
-                        placeholder="Phone number"
+                        placeholder={t('app.phone')}
                         value={phone}
                         onChangeText={(t) => { setPhone(t); if (t?.length === 10) { passwordRef.current?.focus(); } }}
                         keyboardType="phone-pad"
@@ -99,7 +101,7 @@ export default function RegisterScreen() {
                             ref={passwordRef}
                             className="flex-1 p-4 text-lg text-chai-text-primary"
                             placeholderTextColor="#757575"
-                            placeholder="Password"
+                            placeholder={t('app.password')}
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry={!showPassword}
@@ -116,7 +118,7 @@ export default function RegisterScreen() {
                         ref={address1Ref}
                         className="border border-chai-divider p-4 rounded-xl mb-4 text-lg text-chai-text-primary"
                         placeholderTextColor="#757575"
-                        placeholder="Address 1 (Home)"
+                        placeholder={t('app.address1')}
                         value={address1}
                         onChangeText={setAddress1}
                         returnKeyType="next"
@@ -127,7 +129,7 @@ export default function RegisterScreen() {
                         ref={address2Ref}
                         className="border border-chai-divider p-4 rounded-xl mb-6 text-lg text-chai-text-primary"
                         placeholderTextColor="#757575"
-                        placeholder="Address 2 (Work)"
+                        placeholder={t('app.address2')}
                         value={address2}
                         onChangeText={setAddress2}
                         returnKeyType="done"
@@ -139,14 +141,14 @@ export default function RegisterScreen() {
                             <ActivityIndicator color="white" />
                         ) : (
                             <Text className="text-white text-lg font-bold" numberOfLines={1}>
-                                Sign Up
+                                {t('app.signup')}
                             </Text>
                         )}
                     </Pressable>
 
-                    <View className="flex-row justify-center mt-6">
-                        <Text className="text-chai-text-secondary text-lg">Already have an account? </Text>
-                        <Link href="/login"><Text className="text-chai-primary font-bold p-2">Login</Text></Link>
+                    <View className="flex-row justify-center items-center mt-6">
+                        <Text className="text-chai-text-secondary text-lg">{t('app.already_have_account')} </Text>
+                        <Link href="/login"><Text className="text-chai-primary font-bold p-2">{t('app.login')}</Text></Link>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>

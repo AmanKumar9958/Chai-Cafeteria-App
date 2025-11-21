@@ -37,7 +37,7 @@ export default function TabLayout() {
             <MaterialCommunityIcons
               size={26}
               color={color}
-              name={focused ? 'silverware-fork-knife' : 'silverware'}
+              name={focused ? 'silverware-fork-knife' : 'silverware-fork-knife'}
             />
           ),
         }}
@@ -50,7 +50,7 @@ export default function TabLayout() {
             <MaterialCommunityIcons
               size={26}
               color={color}
-              name={focused ? 'shopping-outline' : 'shopping-outline'}
+              name={focused ? 'shopping' : 'shopping-outline'}
             />
           ),
         }}

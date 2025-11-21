@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { useCart } from '../../context/CartContext';
 import axios from 'axios';
@@ -31,6 +32,14 @@ const getGreeting = () => {
   return 'Good Evening';
 };
 
+// Function to get the time of day greeting translation key
+const getGreetingKey = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'greeting_morning';
+  if (hour < 18) return 'greeting_afternoon';
+  return 'greeting_evening';
+};
+
 // --- Your backend should return this data for the carousel ---
 // Use HTTPS to avoid Android cleartext (HTTP) blocking in release builds
 const sliderImages = [
@@ -42,10 +51,12 @@ const sliderImages = [
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user: authUser } = useAuth();
+    const { t } = useTranslation();
   // Align with CartContext which exposes `items`
   const { items: cartItems = [] } = useCart() || {}; // Safely get cart items
   const [name, setName] = useState('User');
   const [greeting, setGreeting] = useState('Good Morning');
+    const [greetingKey, setGreetingKey] = useState(getGreetingKey());
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -78,6 +89,7 @@ export default function HomeScreen() {
   // Main data fetching effect
   useEffect(() => {
     setGreeting(getGreeting());
+      setGreetingKey(getGreetingKey());
     const fetchCategories = async () => {
       setIsLoading(true);
       try {
@@ -119,9 +131,9 @@ export default function HomeScreen() {
 
       {/* Categories Title */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-2xl font-bold text-chai-text-primary">Categories</Text>
+        <Text className="text-2xl font-bold text-chai-text-primary">{t('app.categories')}</Text>
         <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: 'all' } })} className="px-2 py-1">
-          <Text className="text-sm text-chai-primary font-semibold" numberOfLines={1}>See all</Text>
+          <Text className="text-sm text-chai-primary font-semibold" numberOfLines={1}>{t('app.see_all')}</Text>
         </Pressable>
       </View>
     </>
@@ -178,7 +190,7 @@ export default function HomeScreen() {
           <View className="px-6">
             <View className="flex-row justify-between items-center mb-6">
               <View>
-                <Text className="text-xl text-chai-text-secondary font-medium">{greeting},</Text>
+                <Text className="text-xl text-chai-text-secondary font-medium">{t(`app.${greetingKey}`)},</Text>
                 <Text className="text-3xl font-bold text-chai-text-primary" numberOfLines={1}>{name}</Text>
               </View>
               <Pressable className="relative p-2 rounded-full">
@@ -202,7 +214,7 @@ export default function HomeScreen() {
           <View className="px-6">
             <View className="flex-row justify-between items-center mb-6">
               <View>
-                <Text className="text-xl text-chai-text-secondary font-medium">{greeting},</Text>
+                <Text className="text-xl text-chai-text-secondary font-medium">{t(`app.${greetingKey}`)},</Text>
                 <Text className="text-3xl font-bold text-chai-text-primary" numberOfLines={1}>{name}</Text>
               </View>
               <Pressable 

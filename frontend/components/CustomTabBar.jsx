@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Pressable, Dimensions, Animated } from 'react-native';
+import { View, Pressable, Dimensions, Animated, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,17 +8,36 @@ const { width } = Dimensions.get('window');
 const CustomTabBar = ({ state, descriptors, navigation }) => {
     const insets = useSafeAreaInsets();
 
+  // Reduce excessive bottom gap on Android with 3-button navigation by clamping
+  // the safe-area inset influence. Keep full inset on iOS/gesture nav.
+  const rawInset = insets.bottom || 0;
+  const hasInset = rawInset > 0;
+  // Symmetric padding so icons remain visually centered
+  const computedPad = Platform.OS === 'android'
+    ? (hasInset ? Math.min(rawInset, 10) : 8)
+    : rawInset;
+  const padTop = computedPad;
+  const padBottom = computedPad;
+  // Lift the bar when Android returns zero inset (3-button nav often overlays app)
+  const positionBottom = Platform.OS === 'android'
+    ? (hasInset ? 8 + rawInset : 14)
+    : 8 + rawInset;
+  // Slightly smaller base height to reduce vertical footprint
+  const BASE_HEIGHT = 56;
+  const barHeight = BASE_HEIGHT + padTop + padBottom;
+
   return (
     <View
       style={{
         flexDirection: 'row',
-        height: 64 + insets.bottom,
-        paddingBottom: insets.bottom,
+        height: barHeight,
+        paddingTop: padTop,
+        paddingBottom: padBottom,
         backgroundColor: '#fff',
         position: 'absolute',
         left: '2.5%',
         right: '2.5%',
-        bottom: 8 + insets.bottom,
+        bottom: positionBottom,
         borderRadius: 18,
         shadowColor: '#000',
         shadowOpacity: 0.08,

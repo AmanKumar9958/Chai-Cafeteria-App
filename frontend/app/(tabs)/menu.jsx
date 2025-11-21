@@ -1,45 +1,52 @@
 import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator, Animated } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message'; 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
-import { useLocalSearchParams, router } from 'expo-router'; // Import useLocalSearchParams
+import { useLocalSearchParams, router } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 import Skeleton from '../../components/Skeleton';
+import { useTranslation } from 'react-i18next';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
-const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api'; // Fallback needed
-
-// No mock data — real API will be used
+const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api';
 
 export default function MenuScreen() {
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(24, insets.bottom + 90); // ensure last row clears floating tab bar
-  // Get the categoryId passed from the previous screen
-  const { categoryId, search: incomingSearch } = useLocalSearchParams(); 
-  
-  // Set the initial selected category based on the param, default to 'all'
-  const initialCategory = categoryId || 'all'; 
+  const { t } = useTranslation();
+  const bottomPadding = Math.max(24, insets.bottom + 90);
+  const { categoryId, search: incomingSearch } = useLocalSearchParams();
+  const initialCategory = categoryId || 'all';
 
   const [query, setQuery] = useState(incomingSearch ? String(incomingSearch) : '');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [categories, setCategories] = useState([{ _id: 'all', name: 'All' }]); // Start with 'All'
+  const [categories, setCategories] = useState([{ _id: 'all', name: 'All' }]);
   const [selected, setSelected] = useState(initialCategory);
   const [items, setItems] = useState([]);
   const [isLoadingCats, setIsLoadingCats] = useState(true);
-  const [isLoadingItems, setIsLoadingItems] = useState(true); // Start with true
+  const [isLoadingItems, setIsLoadingItems] = useState(true);
   const { addItem, items: itemsInCart } = useCart();
+  const [showCheckout, setShowCheckout] = useState(false);
+  const checkoutAnim = useRef(new Animated.Value(0)).current;
+  const catsRef = useRef(null);
 
-  const catsRef = useRef(null); // Ref for the horizontal category FlatList
+  useEffect(() => {
+    if (itemsInCart.length > 0) {
+      setShowCheckout(true);
+      Animated.timing(checkoutAnim, { toValue: 1, duration: 220, useNativeDriver: true })?.start();
+    } else if (showCheckout) {
+      Animated.timing(checkoutAnim, { toValue: 0, duration: 160, useNativeDriver: true })?.start(() => setShowCheckout(false));
+    }
+  }, [itemsInCart.length]);
 
-  const handleSelectCategory = (categoryId) => {
-    if (selected === categoryId) return; // Do nothing if already selected
-    setQuery(''); // Clear search when changing category
+  const handleSelectCategory = (cid) => {
+    if (selected === cid) return;
+    setQuery('');
     setDebouncedQuery('');
-    setSelected(categoryId);
-    setItems([]); // Clear items immediately for responsiveness
+    setSelected(cid);
+    setItems([]);
     setIsLoadingItems(true);
   };
 
@@ -55,14 +62,9 @@ export default function MenuScreen() {
         return `${base}/${url}`;
       }
       return url;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   };
 
-  // --- Effects ---
-
-  // Fetch categories when the component mounts
   useEffect(() => {
     const fetchCats = async () => {
       setIsLoadingCats(true);
@@ -70,61 +72,43 @@ export default function MenuScreen() {
         const res = await axios.get(`${API_URL}/menu/categories`);
         setCategories([{ _id: 'all', name: 'All' }, ...(res.data.categories || [])]);
       } catch (err) {
-        console.error("Failed to load categories:", err);
-      } finally {
-        setIsLoadingCats(false);
-      }
+        console.error('Failed to load categories:', err);
+      } finally { setIsLoadingCats(false); }
     };
     fetchCats();
   }, []);
 
-  // Update selected state if the categoryId param changes (e.g., navigating again)
   useEffect(() => {
     if (categoryId) {
       setSelected(categoryId);
     } else if (incomingSearch === undefined) {
-      // If no categoryId is provided and we are not searching, reset to 'all'
       setSelected('all');
     }
   }, [categoryId, incomingSearch]);
 
-  // If routed here with a search query from Home, seed the search box
   useEffect(() => {
     if (typeof incomingSearch !== 'undefined') {
       setQuery(String(incomingSearch || ''));
     }
   }, [incomingSearch]);
 
-  // Scroll the category list when 'selected' changes or categories load
   useEffect(() => {
     if (isLoadingCats || !catsRef.current || !categories || categories.length === 0) return;
-    
     const index = categories.findIndex(c => c._id === selected);
     if (index >= 0) {
-      // Try scrolling to the index. Add error handling.
       try {
-          catsRef.current.scrollToIndex({
-            index: index,
-            animated: true,
-            viewPosition: 0.5, // Try to center the item
-          });
+        catsRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
       } catch (e) {
-          console.warn("Failed to scroll category list:", e);
-         // Fallback or alternative scroll method if scrollToIndex fails
-         // const ITEM_WIDTH = 108; // Approximate width + margin
-         // const offset = Math.max(0, index * ITEM_WIDTH - ITEM_WIDTH / 2); // Center attempt
-         // catsRef.current.scrollToOffset({ offset, animated: true });
+        console.warn('Failed to scroll category list:', e);
       }
     }
-  }, [selected, categories, isLoadingCats]); // Rerun when categories load too
+  }, [selected, categories, isLoadingCats]);
 
-  // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Fetch items based on selected category or search query (from real backend)
   useEffect(() => {
     const fetchItems = async () => {
       setIsLoadingItems(true);
@@ -132,43 +116,35 @@ export default function MenuScreen() {
         let res;
         if (debouncedQuery.length > 0) {
           res = await axios.get(`${API_URL}/menu/search`, { params: { q: debouncedQuery } });
-          setItems(res.data?.items || []);
         } else if (selected === 'all') {
           res = await axios.get(`${API_URL}/menu/items`);
-          setItems(res.data?.items || []);
         } else {
           res = await axios.get(`${API_URL}/menu/items`, { params: { category: selected } });
-          setItems(res.data?.items || []);
         }
-
+        setItems(res.data?.items || []);
       } catch (err) {
-        console.error("Failed to load items:", err);
-        setItems([]); // Clear items on error
-      } finally {
-        setIsLoadingItems(false);
-      }
+        console.error('Failed to load items:', err);
+        setItems([]);
+      } finally { setIsLoadingItems(false); }
     };
     fetchItems();
   }, [selected, debouncedQuery]);
 
-  // --- Render Functions ---
-
-  const renderCategory = ({ item, index }) => (
-    // Added padding, fixed width/height for better consistency
-    <Pressable 
-      onPress={() => handleSelectCategory(item._id)} 
-      className={`p-3 mr-3 rounded-lg items-center justify-center border ${selected === item._id ? 'bg-chai-primary border-chai-primary' : 'bg-white border-chai-divider'}`} 
-      style={{ minWidth: 96, height: 48 }} // Ensure consistent size
-    >
-      <Text 
-        numberOfLines={1} 
-        ellipsizeMode="tail" 
-        className={`font-semibold ${selected === item._id ? 'text-white' : 'text-chai-text-secondary'}`}
+  const renderCategory = ({ item }) => {
+    // Try i18n key first (e.g., app.all). If missing, fall back to the raw name.
+    const key = `app.${String(item?.name || '').toLowerCase()}`;
+    const translated = t(key);
+    const label = translated === key ? (item?.name || '') : translated;
+    return (
+      <Pressable
+        onPress={() => handleSelectCategory(item._id)}
+        className={`p-3 mr-3 rounded-lg items-center justify-center border ${selected === item._id ? 'bg-chai-primary border-chai-primary' : 'bg-white border-chai-divider'}`}
+        style={{ minWidth: 96, height: 48 }}
       >
-        {item.name}
-      </Text>
-    </Pressable>
-  );
+        <Text numberOfLines={1} ellipsizeMode="tail" className={`font-semibold ${selected === item._id ? 'text-white' : 'text-chai-text-secondary'}`}>{label}</Text>
+      </Pressable>
+    );
+  };
 
   const ItemCardBase = ({ item }) => {
     const [loaded, setLoaded] = useState(false);
@@ -180,29 +156,22 @@ export default function MenuScreen() {
       <View className="flex-1 p-2">
         <View className="bg-white rounded-2xl shadow-md overflow-hidden">
           <View style={{ width: '100%', height: 128 }}>
-            {!loaded && (
-              <View className="absolute inset-0">
-                <Skeleton width="100%" height={128} borderRadius={16} />
-              </View>
-            )}
-            <ExpoImage
-              source={src}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              transition={0}
-              onLoadEnd={() => setLoaded(true)}
-            />
+            {!loaded && <View className="absolute inset-0"><Skeleton width="100%" height={128} borderRadius={16} /></View>}
+            <ExpoImage source={src} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={0} onLoadEnd={() => setLoaded(true)} />
           </View>
           <View className="p-3">
             <Text className="text-base font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{item.name}</Text>
             <View className="flex-row justify-between items-center">
               <Text className="text-sm text-chai-text-secondary">₹{Number(item.price).toFixed(2)}</Text>
-              <Pressable 
-                onPress={() => { 
-                  addItem(item); 
-                  Toast.show({ type: 'success', text1: 'Added to cart', text2: item.name });
-                }} 
+              <Pressable
+                onPress={() => {
+                  addItem(item);
+                  if (itemsInCart.length === 0) {
+                    setShowCheckout(true);
+                    Animated.timing(checkoutAnim, { toValue: 1, duration: 220, useNativeDriver: true })?.start();
+                  }
+                  Toast.show({ type: 'success', text1: t('app.added_to_cart'), text2: item.name });
+                }}
                 className="bg-chai-primary w-8 h-8 rounded-full items-center justify-center active:opacity-90"
               >
                 <Ionicons name="add" size={20} color="white" />
@@ -215,22 +184,17 @@ export default function MenuScreen() {
   };
   ItemCardBase.displayName = 'ItemCard';
   const ItemCard = memo(ItemCardBase);
-
   const renderItemCard = ({ item }) => <ItemCard item={item} />;
 
-  // Build two-column rows for SectionList (memoized to avoid remounting images while typing)
-  const sections = useMemo(() => [{ title: 'menu', data: items }], [items]);
-
   return (
-  <SafeAreaView className="flex-1 bg-chai-bg pt-5">
-      {/* Search bar extracted from SectionList header to prevent list re-render on each keystroke */}
+    <SafeAreaView className="flex-1 bg-chai-bg pt-5">
       <View className="px-4 mb-2">
         <View className="flex-row items-center bg-white rounded-full px-4 py-3 shadow-sm border border-chai-divider">
           <Feather name="search" size={20} color="#9CA3AF" className="mr-3" />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search items..."
+            placeholder={t('app.search_items')}
             placeholderTextColor="#757575"
             className="flex-1 text-[15px] text-chai-text-primary"
             clearButtonMode="while-editing"
@@ -249,32 +213,26 @@ export default function MenuScreen() {
         renderItem={renderItemCard}
         keyExtractor={(item) => item._id}
         numColumns={2}
-        ListHeaderComponent={
-          !isLoadingCats && categories.length > 0 ? (
-            <View style={{ height: 64, backgroundColor: 'transparent' }}>
-              <FlatList
-                ref={catsRef}
-                data={categories}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                renderItem={renderCategory}
-                keyExtractor={c => c._id}
-                contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}
-                getItemLayout={(data, index) => (
-                  { length: 96 + 12, offset: (96 + 12) * index, index }
-                )}
-              />
-            </View>
-          ) : (
-            <View style={{ height: 64, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
-              <ActivityIndicator size="small" color="#C7A27C" />
-            </View>
-          )
-        }
-        // Header removed; search now above list
+        ListHeaderComponent={!isLoadingCats && categories.length > 0 ? (
+          <View style={{ height: 64, backgroundColor: 'transparent' }}>
+            <FlatList
+              ref={catsRef}
+              data={categories}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={renderCategory}
+              keyExtractor={c => c._id}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}
+              getItemLayout={(data, index) => ({ length: 96 + 12, offset: (96 + 12) * index, index })}
+            />
+          </View>
+        ) : (
+          <View style={{ height: 64, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="small" color="#C7A27C" />
+          </View>
+        )}
         ListEmptyComponent={isLoadingItems ? (
           <View style={{ paddingHorizontal: 8, paddingVertical: 16 }}>
-            {/* Skeleton grid: two columns, three rows */}
             {[0,1,2].map(r => (
               <View key={r} className="flex-row">
                 <View className="flex-1 p-2">
@@ -300,29 +258,35 @@ export default function MenuScreen() {
           </View>
         ) : (
           <View className="py-10 items-center px-8">
-            <ExpoImage
-              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/562/562678.png' }}
-              style={{ width: 144, height: 144, marginBottom: 12 }}
-              contentFit="contain"
-            />
-            <Text className="text-lg font-semibold text-chai-text-primary mb-1">Nothing here yet</Text>
-            <Text className="text-sm text-chai-text-secondary text-center">No items in this category. Try a different category or browse all.</Text>
+            <ExpoImage source={{ uri: 'https://cdn-icons-png.flaticon.com/512/562/562678.png' }} style={{ width: 144, height: 144, marginBottom: 12 }} contentFit="contain" />
+            <Text className="text-lg font-semibold text-chai-text-primary mb-1">{t('app.nothing_here')}</Text>
+            <Text className="text-sm text-chai-text-secondary text-center">{t('app.nothing_here_hint')}</Text>
             <Pressable onPress={() => setSelected('all')} className="mt-4 bg-chai-primary px-5 py-3 rounded-full">
-              <Text className="text-white font-semibold">Browse all items</Text>
+              <Text className="text-white font-semibold">{t('app.browse_all_items')}</Text>
             </Pressable>
           </View>
         )}
         contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: bottomPadding }}
         showsVerticalScrollIndicator={false}
       />
-      {itemsInCart.length > 0 && (
-        <View style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 16 }}>
-          <Pressable onPress={() => router.push('/checkout')} className="bg-chai-primary py-4 rounded-full shadow-lg items-center">
-            <Text className="text-white font-semibold">
-              Checkout • {itemsInCart.reduce((s, it) => s + (it.qty || 0), 0)} item(s)
-            </Text>
+      {showCheckout && (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            left: 16,
+            right: 16,
+            bottom: insets.bottom + 88,
+            opacity: checkoutAnim,
+            transform: [{ translateY: checkoutAnim.interpolate({ inputRange: [0,1], outputRange: [40,0] }) }],
+            zIndex: 100,
+            elevation: 8,
+          }}
+          pointerEvents={showCheckout ? 'auto' : 'none'}
+        >
+          <Pressable onPress={() => router.push('/checkout')} className="bg-chai-primary py-4 rounded-full shadow-lg items-center active:opacity-90">
+            <Text className="text-white font-semibold">{t('app.checkout')} • {itemsInCart.reduce((s, it) => s + (it.qty || 0), 0)} {t('app.items_suffix')}</Text>
           </Pressable>
-        </View>
+        </Animated.View>
       )}
     </SafeAreaView>
   );

@@ -9,11 +9,13 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { router } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
 
 export default function OrdersScreen() {
+  const { t } = useTranslation();
   const { userToken, user } = useAuth();
   const { addItemsBatch } = useCart() || {};
   const [loading, setLoading] = useState(true);
@@ -109,32 +111,16 @@ export default function OrdersScreen() {
   }
 
   if (!orders || orders.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-chai-bg px-8">
-        <View className="items-center">
-          <ExpoImage
-            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2822/2822682.png' }}
-            style={{ width: 144, height: 144, marginBottom: 16 }}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-          />
-          <Text className="text-lg font-semibold text-chai-text-primary mb-1">No orders yet</Text>
-          <Text className="text-sm text-chai-text-secondary text-center mb-4">Your past orders will show up here once you place one.</Text>
-          <Pressable onPress={() => router.push('/(tabs)/menu')} className="bg-chai-primary px-5 py-3 rounded-full">
-            <Text className="text-white font-semibold">Browse menu</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
+    return (<SafeAreaView className="flex-1 items-center justify-center bg-chai-bg px-8"><View className="items-center"><ExpoImage source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2822/2822682.png' }} style={{ width: 144, height: 144, marginBottom: 16 }} contentFit="contain" cachePolicy="memory-disk" /><Text className="text-lg font-semibold text-chai-text-primary mb-1 ">No orders yet</Text><Text className="text-sm text-chai-text-secondary text-center mb-4">Your past orders will show up here once you place one.</Text><Pressable onPress={() => router.push('/(tabs)/menu')} className="bg-chai-primary px-5 py-3 rounded-full"><Text className="text-white font-semibold">Browse menu</Text></Pressable></View></SafeAreaView>);
   }
 
   return (
     <SafeAreaView className="flex-1 bg-chai-bg pt-4 mt-4" style={{ paddingBottom: bottomPadding }}>
-      <View className="px-4 pb-2 flex-row items-center">
-        <Text className="text-2xl font-bold ml-2 mr-2 flex-1 text-chai-text-primary" numberOfLines={1}>My Orders</Text>
+      <View className="px-4 pb-2 flex-row items-center justify-between">
+        <Text className="text-3xl font-extrabold text-chai-text-primary">{t('app.my_orders')}</Text>
         <Pressable onPress={fetchOrders} className="flex-row items-center gap-1 px-3 py-2 bg-chai-primary rounded-full">
           <Ionicons name="refresh" size={16} color="#fff" />
-          <Text className="text-white font-medium">Refresh</Text>
+          <Text className="text-chai-text-primary font-semibold">{t('app.refresh')}</Text>
         </Pressable>
       </View>
       <FlatList
@@ -144,13 +130,20 @@ export default function OrdersScreen() {
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View className="bg-white p-4 rounded-lg mx-4 mb-3 border border-chai-divider">
-            <View className="flex-row justify-between items-center mb-1">
-              <Text className="font-bold text-chai-text-primary">Order ID: {item._id || item.id}</Text>
+            <View className="flex-row justify-between items-center mb-1" style={{ flexWrap: 'nowrap' }}>
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="middle"
+                style={{ flexShrink: 1 }}
+                className="font-bold text-chai-text-primary"
+              >
+                Order ID: {item._id || item.id}
+              </Text>
               {(() => {
                 const s = item.status || 'Order Placed';
                 const sty = statusStyle[s] || statusStyle['Order Placed'];
                 return (
-                  <View className={`px-2 py-1 rounded-full ${sty.bg}`}>
+                  <View style={{ marginLeft: 8, flexShrink: 0 }} className={`px-2 py-1 rounded-full ${sty.bg}`}>
                     <Text className={`text-[10px] font-semibold ${sty.text}`}>{s}</Text>
                   </View>
                 );
@@ -167,7 +160,14 @@ export default function OrdersScreen() {
             <Text className="text-sm text-chai-text-secondary mb-2">Payment: {item.paymentMethod || '—'}</Text>
             <View className="mt-1">
               {(item.items || []).map((it, idx) => (
-                <Text key={(it._id || it.id || idx) + ''} className="text-sm text-chai-text-primary">• {it.name} x {it.qty || it.quantity || 1}</Text>
+                <Text
+                  key={(it._id || it.id || idx) + ''}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  className="text-sm text-chai-text-primary"
+                >
+                  • {it.name} x {it.qty || it.quantity || 1}
+                </Text>
               ))}
             </View>
             {(item.couponCode || item.discount) && (
