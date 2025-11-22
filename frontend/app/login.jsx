@@ -1,6 +1,6 @@
 // frontend/app/login.jsx
-import React, { useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Image } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { View, Text, TextInput, Pressable, ActivityIndicator, Image, Animated, Easing } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
@@ -24,10 +24,34 @@ export default function LoginScreen() {
     setIsLoading(false);
   };
 
+  // Slide-in animation (left -> center) plus fade
+  const slideAnim = useRef(new Animated.Value(40)).current; // X offset
+  const fadeAnim = useRef(new Animated.Value(0)).current; // opacity
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 380,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [slideAnim, fadeAnim]);
+
   return (
     <SafeAreaView className="flex-1 bg-chai-bg">
       <StatusBar style="dark" />
-      <View className="flex-1 justify-center p-8">
+      <Animated.View
+        className="flex-1 justify-center p-8"
+        style={{ transform: [{ translateX: slideAnim }], opacity: fadeAnim }}
+      >
         <View className="items-center mb-10">
           <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
           <Text className="text-3xl font-bold mt-4 text-chai-text-primary">{t('app.welcome_back')}</Text>
@@ -87,7 +111,7 @@ export default function LoginScreen() {
             <Text className="text-chai-primary font-bold">{t('app.signup')}</Text>
           </Link>
         </View>
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }

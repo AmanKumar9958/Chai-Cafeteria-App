@@ -1,6 +1,6 @@
 // frontend/app/register.jsx
-import React, { useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Image, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { View, Text, TextInput, Pressable, ActivityIndicator, Image, Platform, KeyboardAvoidingView, ScrollView, Animated, Easing } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
@@ -48,10 +48,34 @@ export default function RegisterScreen() {
         setIsLoading(false);
     };
 
+    // Slide-in animation (left -> center) plus fade for registration form
+    const slideAnim = useRef(new Animated.Value(48)).current; // X offset
+    const fadeAnim = useRef(new Animated.Value(0)).current; // opacity
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 460,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 400,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [slideAnim, fadeAnim]);
+
     return (
         <SafeAreaView className="flex-1 bg-chai-bg">
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
-                <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 32 }} keyboardShouldPersistTaps="handled">
+                <Animated.ScrollView
+                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 32 }}
+                    keyboardShouldPersistTaps="handled"
+                    style={{ transform: [{ translateX: slideAnim }], opacity: fadeAnim }}
+                >
                     <View className="items-center mb-6">
                         <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
                         <Text className="text-3xl font-bold mt-4 text-chai-text-primary">{t('app.welcome')}</Text>
@@ -150,7 +174,7 @@ export default function RegisterScreen() {
                         <Text className="text-chai-text-secondary text-lg">{t('app.already_have_account')} </Text>
                         <Link href="/login"><Text className="text-chai-primary font-bold p-2">{t('app.login')}</Text></Link>
                     </View>
-                </ScrollView>
+                </Animated.ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
