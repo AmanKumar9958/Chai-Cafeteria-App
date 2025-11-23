@@ -24,15 +24,15 @@ export default function ResetPasswordScreen() {
   const { t } = useTranslation();
 
   const submit = async () => {
-    if (!email || !otp || !password) { Toast.show({ type: 'error', text1: 'Fill all fields' }); return; }
+    if (!email || !otp || !password) { Toast.show({ type: 'bannerError', text1: 'Fill all fields' }); return; }
     setLoading(true);
     try {
       await axios.post(`${API_URL}/auth/reset-password`, { email, otp, newPassword: password });
-      Toast.show({ type: 'success', text1: t('app.reset_password'), text2: t('app.login') });
+      Toast.show({ type: 'bannerSuccess', text1: t('app.reset_password'), text2: t('app.login') });
       router.replace('/login');
     } catch (e) {
       const msg = e?.response?.data?.msg || e?.message || 'Failed to reset password';
-      Toast.show({ type: 'error', text1: 'Reset failed', text2: String(msg) });
+      Toast.show({ type: 'bannerError', text1: 'Reset failed', text2: String(msg) });
     } finally {
       setLoading(false);
     }

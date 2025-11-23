@@ -1,6 +1,8 @@
 // frontend/app/register.jsx
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Image, Platform, KeyboardAvoidingView, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, Image, Platform, KeyboardAvoidingView, ScrollView, Animated, Easing } from 'react-native';
+import AnimatedPressable from '../components/AnimatedPressable';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
@@ -37,12 +39,12 @@ export default function RegisterScreen() {
         try {
             await axios.post(`${API_URL}/auth/register`, { name, email, password, phone, address1, address2 });
             // On success, navigate to the OTP screen, passing the email along
-            Toast.show({ type: 'success', text1: 'Registration successful', text2: `OTP sent to ${email}` });
+            Toast.show({ type: 'bannerSuccess', text1: 'Registration successful', text2: `OTP sent to ${email}` });
             router.push({ pathname: '/verify-otp', params: { email } });
         } catch (error) {
             const serverMsg = error?.response?.data?.msg || error?.response?.data || error?.message || 'Unknown error';
             console.error('Registration failed:', serverMsg);
-            Toast.show({ type: 'error', text1: 'Registration failed', text2: String(serverMsg) });
+            Toast.show({ type: 'bannerError', text1: 'Registration failed', text2: String(serverMsg) });
             // Show an error message
         }
         setIsLoading(false);
@@ -70,6 +72,7 @@ export default function RegisterScreen() {
 
     return (
         <SafeAreaView className="flex-1 bg-chai-bg">
+            <LanguageSwitcher style={{ position: 'absolute', top: 8, right: 16, zIndex: 50 }} />
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
                 <Animated.ScrollView
                     contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 32 }}
@@ -78,8 +81,8 @@ export default function RegisterScreen() {
                 >
                     <View className="items-center mb-6">
                         <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
-                        <Text className="text-3xl font-bold mt-4 text-chai-text-primary">{t('app.welcome')}</Text>
-                        <Text className="text-chai-text-secondary mt-2 font-semibold">{t('app.create_account')}</Text>
+                        <Text className="text-3xl font-bold mt-4 text-chai-text-primary py-1" numberOfLines={1} ellipsizeMode="tail">{t('app.welcome')}</Text>
+                        <Text className="text-chai-text-secondary mt-2 font-semibold" numberOfLines={1} ellipsizeMode="tail">{t('app.create_account')}</Text>
                     </View>
 
                     <TextInput
@@ -93,6 +96,7 @@ export default function RegisterScreen() {
                         returnKeyType="next"
                         onSubmitEditing={() => emailRef.current?.focus()}
                         blurOnSubmit={false}
+                        multiline={false}
                     />
                     <TextInput
                         ref={emailRef}
@@ -106,6 +110,7 @@ export default function RegisterScreen() {
                         returnKeyType="next"
                         onSubmitEditing={() => phoneRef.current?.focus()}
                         blurOnSubmit={false}
+                        multiline={false}
                     />
                     <TextInput
                         ref={phoneRef}
@@ -119,6 +124,7 @@ export default function RegisterScreen() {
                         returnKeyType="next"
                         onSubmitEditing={() => passwordRef.current?.focus()}
                         blurOnSubmit={false}
+                        multiline={false}
                     />
                     <View className="flex-row items-center border border-chai-divider rounded-xl mb-6">
                         <TextInput
@@ -133,10 +139,11 @@ export default function RegisterScreen() {
                             returnKeyType="next"
                             onSubmitEditing={() => address1Ref.current?.focus()}
                             blurOnSubmit={false}
+                            multiline={false}
                         />
-                        <Pressable onPress={() => setShowPassword(!showPassword)} className="p-4">
+                        <AnimatedPressable onPress={() => setShowPassword(!showPassword)} className="p-4" scaleTo={0.85} haptic={false}>
                             <Feather name={showPassword ? 'eye-off' : 'eye'} size={24} color="#757575" />
-                        </Pressable>
+                        </AnimatedPressable>
                     </View>
                     <TextInput
                         ref={address1Ref}
@@ -148,6 +155,7 @@ export default function RegisterScreen() {
                         returnKeyType="next"
                         onSubmitEditing={() => address2Ref.current?.focus()}
                         blurOnSubmit={false}
+                        multiline={false}
                     />
                     <TextInput
                         ref={address2Ref}
@@ -158,21 +166,22 @@ export default function RegisterScreen() {
                         onChangeText={setAddress2}
                         returnKeyType="done"
                         onSubmitEditing={handleRegister}
+                        multiline={false}
                     />
 
-                    <Pressable onPress={handleRegister} className="bg-chai-primary w-full p-4 rounded-xl items-center justify-center" disabled={isLoading}>
+                    <AnimatedPressable onPress={handleRegister} className="bg-chai-primary w-full p-4 rounded-xl items-center justify-center" disabled={isLoading} haptic="selection">
                         {isLoading ? (
                             <ActivityIndicator color="white" />
                         ) : (
-                            <Text className="text-white text-lg font-bold" numberOfLines={1}>
+                            <Text className="text-white text-lg font-bold" numberOfLines={1} ellipsizeMode="tail">
                                 {t('app.signup')}
                             </Text>
                         )}
-                    </Pressable>
+                    </AnimatedPressable>
 
                     <View className="flex-row justify-center items-center mt-6">
-                        <Text className="text-chai-text-secondary text-lg">{t('app.already_have_account')} </Text>
-                        <Link href="/login"><Text className="text-chai-primary font-bold p-2">{t('app.login')}</Text></Link>
+                        <Text className="text-chai-text-secondary text-lg" numberOfLines={1} ellipsizeMode="tail">{t('app.already_have_account')} </Text>
+                        <Link href="/login"><Text className="text-chai-primary font-bold p-2" numberOfLines={1} ellipsizeMode="tail">{t('app.login')}</Text></Link>
                     </View>
                 </Animated.ScrollView>
             </KeyboardAvoidingView>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, TextInput, FlatList, ActivityIndicator, Animated } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message'; 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { useCart } from '../../context/CartContext';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 import Skeleton from '../../components/Skeleton';
+import AnimatedPressable from '../../components/AnimatedPressable';
 import { useTranslation } from 'react-i18next';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
@@ -16,7 +17,9 @@ const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.repla
 export default function MenuScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const bottomPadding = Math.max(24, insets.bottom + 90);
+  // Space for floating checkout bar so list items are not covered
+  const checkoutBarHeight = 64;
+  const bottomPadding = insets.bottom + checkoutBarHeight + 32; // extra breathing room
   const { categoryId, search: incomingSearch } = useLocalSearchParams();
   const initialCategory = categoryId || 'all';
 
@@ -136,13 +139,15 @@ export default function MenuScreen() {
     const translated = t(key);
     const label = translated === key ? (item?.name || '') : translated;
     return (
-      <Pressable
+      <AnimatedPressable
         onPress={() => handleSelectCategory(item._id)}
         className={`p-3 mr-3 rounded-lg items-center justify-center border ${selected === item._id ? 'bg-chai-primary border-chai-primary' : 'bg-white border-chai-divider'}`}
         style={{ minWidth: 96, height: 48 }}
+        scaleTo={0.9}
+        haptic={false}
       >
         <Text numberOfLines={1} ellipsizeMode="tail" className={`font-semibold ${selected === item._id ? 'text-white' : 'text-chai-text-secondary'}`}>{label}</Text>
-      </Pressable>
+      </AnimatedPressable>
     );
   };
 
@@ -163,19 +168,21 @@ export default function MenuScreen() {
             <Text className="text-base font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{item.name}</Text>
             <View className="flex-row justify-between items-center">
               <Text className="text-sm text-chai-text-secondary">₹{Number(item.price).toFixed(2)}</Text>
-              <Pressable
+              <AnimatedPressable
                 onPress={() => {
                   addItem(item);
                   if (itemsInCart.length === 0) {
                     setShowCheckout(true);
                     Animated.timing(checkoutAnim, { toValue: 1, duration: 220, useNativeDriver: true })?.start();
                   }
-                  Toast.show({ type: 'success', text1: t('app.added_to_cart'), text2: item.name });
+                  Toast.show({ type: 'bannerSuccess', text1: t('app.added_to_cart'), text2: item.name });
                 }}
                 className="bg-chai-primary w-8 h-8 rounded-full items-center justify-center active:opacity-90"
+                scaleTo={0.85}
+                haptic="selection"
               >
                 <Ionicons name="add" size={20} color="white" />
-              </Pressable>
+              </AnimatedPressable>
             </View>
           </View>
         </View>
@@ -187,7 +194,7 @@ export default function MenuScreen() {
   const renderItemCard = ({ item }) => <ItemCard item={item} />;
 
   return (
-    <SafeAreaView className="flex-1 bg-chai-bg pt-5">
+    <SafeAreaView className="flex-1 bg-chai-bg pt-5 mt-1">
       <View className="px-4 mb-2">
         <View className="flex-row items-center bg-white rounded-full px-4 py-3 shadow-sm border border-chai-divider">
           <Feather name="search" size={20} color="#9CA3AF" className="mr-3" />
@@ -202,9 +209,9 @@ export default function MenuScreen() {
             onSubmitEditing={() => setDebouncedQuery(query)}
           />
           {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')} className="p-1">
+            <AnimatedPressable onPress={() => setQuery('')} className="p-1" scaleTo={0.85} haptic={false}>
               <Feather name="x-circle" size={20} color="#9CA3AF" />
-            </Pressable>
+            </AnimatedPressable>
           )}
         </View>
       </View>
@@ -261,11 +268,12 @@ export default function MenuScreen() {
             <ExpoImage source={{ uri: 'https://cdn-icons-png.flaticon.com/512/562/562678.png' }} style={{ width: 144, height: 144, marginBottom: 12 }} contentFit="contain" />
             <Text className="text-lg font-semibold text-chai-text-primary mb-1">{t('app.nothing_here')}</Text>
             <Text className="text-sm text-chai-text-secondary text-center">{t('app.nothing_here_hint')}</Text>
-            <Pressable onPress={() => setSelected('all')} className="mt-4 bg-chai-primary px-5 py-3 rounded-full">
+            <AnimatedPressable onPress={() => setSelected('all')} className="mt-4 bg-chai-primary px-5 py-3 rounded-full" haptic="selection" scaleTo={0.93}>
               <Text className="text-white font-semibold">{t('app.browse_all_items')}</Text>
-            </Pressable>
+            </AnimatedPressable>
           </View>
         )}
+        ListFooterComponent={<View style={{ height: checkoutBarHeight + insets.bottom + 5 }} />}
         contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: bottomPadding }}
         showsVerticalScrollIndicator={false}
       />
@@ -275,6 +283,7 @@ export default function MenuScreen() {
             position: 'absolute',
             left: 16,
             right: 16,
+            // Restore original higher offset so it sits above tab bar visibly
             bottom: insets.bottom + 88,
             opacity: checkoutAnim,
             transform: [{ translateY: checkoutAnim.interpolate({ inputRange: [0,1], outputRange: [40,0] }) }],
@@ -283,9 +292,9 @@ export default function MenuScreen() {
           }}
           pointerEvents={showCheckout ? 'auto' : 'none'}
         >
-          <Pressable onPress={() => router.push('/checkout')} className="bg-chai-primary py-4 rounded-full shadow-lg items-center active:opacity-90">
+          <AnimatedPressable onPress={() => router.push('/checkout')} className="bg-chai-primary py-4 rounded-full shadow-lg items-center active:opacity-90 mb-1" haptic="selection" scaleTo={0.95}>
             <Text className="text-white font-semibold">{t('app.checkout')} • {itemsInCart.reduce((s, it) => s + (it.qty || 0), 0)} {t('app.items_suffix')}</Text>
-          </Pressable>
+          </AnimatedPressable>
         </Animated.View>
       )}
     </SafeAreaView>

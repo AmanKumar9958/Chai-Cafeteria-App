@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Pressable, Dimensions, Animated, Platform } from 'react-native';
+import { View, Dimensions, Animated, Platform } from 'react-native';
+import AnimatedPressable from './AnimatedPressable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -94,7 +95,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
             : 'help-circle';
 
         return (
-          <Pressable
+          <AnimatedPressable
             key={route.key}
             accessibilityRole="button"
             accessibilityState={isFocused ? { selected: true } : {}}
@@ -103,13 +104,15 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
             onPress={onPress}
             onLongPress={onLongPress}
             style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+            scaleTo={0.9}
+            haptic={false}
           >
             <MaterialCommunityIcons
               name={iconName}
               size={26}
               color={isFocused ? '#E8751A' : '#757575'}
             />
-          </Pressable>
+          </AnimatedPressable>
         );
       })}
     </View>

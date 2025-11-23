@@ -26,13 +26,13 @@ export default function VerifyOtpScreen() {
                 await authenticateWithToken(token, 'Email verified');
                 return;
             }
-            Toast.show({ type: 'success', text1: 'Email verified', text2: 'You can now log in.' });
+            Toast.show({ type: 'bannerSuccess', text1: 'Email verified', text2: 'You can now log in.' });
             // Fallback navigation
             router.replace('/login');
         } catch (error) {
             const serverMsg = error?.response?.data?.msg || error?.response?.data || error?.message || 'Unknown error';
             console.error('OTP verification failed:', serverMsg);
-            Toast.show({ type: 'error', text1: 'OTP verification failed', text2: String(serverMsg) });
+            Toast.show({ type: 'bannerError', text1: 'OTP verification failed', text2: String(serverMsg) });
         }
         setIsLoading(false);
     };
@@ -44,6 +44,7 @@ export default function VerifyOtpScreen() {
             <TextInput
                 className="bg-gray-100 p-4 rounded-lg mb-6 text-lg text-center"
                 placeholder="Enter 6-digit OTP"
+                placeholderTextColor="#9CA3AF"
                 value={otp}
                 onChangeText={(t) => { setOtp(t); if (t?.length === 6 && !isLoading) { handleVerify(); } }}
                 keyboardType="number-pad"

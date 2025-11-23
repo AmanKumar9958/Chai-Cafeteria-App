@@ -27,22 +27,8 @@ i18n.use(initReactI18next).init({
     const saved = await AsyncStorage.getItem('app_lang');
     if (saved) {
       targetLang = saved;
-    } else {
-      try {
-        const Localization = await import('expo-localization');
-        const locales = Localization.getLocales?.();
-        if (Array.isArray(locales) && locales.length) {
-          const code = locales[0].languageCode || 'en';
-          targetLang = code.startsWith('hi') ? 'hi' : 'en';
-        } else if (Localization.locale) {
-          const code = Localization.locale.split('-')[0];
-          targetLang = code.startsWith('hi') ? 'hi' : 'en';
-        }
-      } catch (e) {
-        // expo-localization not available yet; keep 'en'
-        console.warn('[i18n] expo-localization unavailable, falling back to en');
-      }
     }
+    // Default to English if no saved language is found
   } catch (e) {
     // storage read failed; keep 'en'
   }

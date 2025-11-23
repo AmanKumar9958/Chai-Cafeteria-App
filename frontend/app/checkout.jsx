@@ -1,11 +1,12 @@
-import React, { useMemo, useState, useRef } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { View, Text, TextInput, ScrollView, Animated, Easing } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { router } from 'expo-router';
+import AnimatedPressable from '../components/AnimatedPressable';
 import { openRazorpayCheckout } from '../utils/razorpay';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
@@ -120,12 +121,12 @@ export default function CheckoutScreen() {
         totals,
       };
   await axios.post(`${API_URL}/orders`, payload, { headers: { Authorization: `Bearer ${userToken}` } });
-      Toast.show({ type: 'success', text1: 'Order placed!', text2: "We'll get started right away." });
+      Toast.show({ type: 'bannerSuccess', text1: 'Order placed!', text2: "We'll get started right away." });
       clear();
       router.replace('/(tabs)/orders');
     } catch (e) {
       console.error('Order failed', e?.response?.data || e?.message || e);
-      Toast.show({ type: 'error', text1: 'Failed to place order', text2: 'Please try again.' });
+      Toast.show({ type: 'bannerError', text1: 'Failed to place order', text2: 'Please try again.' });
     } finally {
       setSubmitting(false);
     }
@@ -137,7 +138,7 @@ export default function CheckoutScreen() {
       // 1) Create Razorpay order on backend (amount in paise)
       const amountPaise = Math.round(totals.total * 100);
       if (!RZP_KEY) {
-        Toast.show({ type: 'error', text1: 'Razorpay key missing', text2: 'Set EXPO_PUBLIC_RAZORPAY_KEY_ID in your env' });
+        Toast.show({ type: 'bannerError', text1: 'Razorpay key missing', text2: 'Set EXPO_PUBLIC_RAZORPAY_KEY_ID in your env' });
         setPaying(false);
         return;
       }
@@ -184,7 +185,7 @@ export default function CheckoutScreen() {
       // 4) Place order with payment details
       // Require login for order placement
       if (!userToken) {
-        Toast.show({ type: 'error', text1: 'Login required', text2: 'Please login to place an order.' });
+        Toast.show({ type: 'bannerError', text1: 'Login required', text2: 'Please login to place an order.' });
         try { router.push('/login'); } catch {}
         setPaying(false);
         return;
@@ -207,7 +208,7 @@ export default function CheckoutScreen() {
         totals,
       };
   await axios.post(`${API_URL}/orders`, payload, { headers: { Authorization: `Bearer ${userToken}` } });
-      Toast.show({ type: 'success', text1: 'Payment successful', text2: 'Order placed!' });
+      Toast.show({ type: 'bannerSuccess', text1: 'Payment successful', text2: 'Order placed!' });
       clear();
       router.replace('/(tabs)/orders');
     } catch (e) {
@@ -219,7 +220,7 @@ export default function CheckoutScreen() {
       const friendly = /Cannot (GET|POST)/i.test(String(msg)) || status === 404 || status === 405
         ? 'Payment API route not found on server. Please deploy the Razorpay endpoints.'
         : (msg || 'Please try again.');
-      Toast.show({ type: 'error', text1: 'Payment failed', text2: friendly });
+      Toast.show({ type: 'bannerError', text1: 'Payment failed', text2: friendly });
     } finally {
       setPaying(false);
       setSubmitting(false);
@@ -236,29 +237,31 @@ export default function CheckoutScreen() {
       if (data && data.valid) {
         setAppliedCoupon({ code: data.coupon.code, type: data.coupon.type, value: data.coupon.value, discount: data.discount || 0, freeDelivery: !!data.freeDelivery });
         setCouponMessage('Coupon applied');
-        Toast.show({ type: 'success', text1: 'Coupon applied' });
+        Toast.show({ type: 'bannerSuccess', text1: 'Coupon applied' });
       } else {
         setAppliedCoupon(null);
         setCouponMessage('Invalid coupon');
-        Toast.show({ type: 'error', text1: 'Invalid coupon' });
+        Toast.show({ type: 'bannerError', text1: 'Invalid coupon' });
       }
     } catch (err) {
       setAppliedCoupon(null);
       setCouponMessage(err?.response?.data?.msg || 'Invalid coupon');
-      Toast.show({ type: 'error', text1: 'Invalid coupon', text2: err?.response?.data?.msg });
+      Toast.show({ type: 'bannerError', text1: 'Invalid coupon', text2: err?.response?.data?.msg });
     } finally {
       setApplyingCoupon(false);
     }
   };
 
-  const QtyControl = ({ item }) => (
-    <View className="flex-row items-center">
-      <Pressable onPress={() => updateQty(item._id, Math.max(1, (item.qty || 1) - 1))} className="w-8 h-8 rounded-full bg-gray-200 items-center justify-center"><Text>-</Text></Pressable>
-      <Text className="mx-3 font-semibold">{item.qty || 0}</Text>
-      <Pressable onPress={() => updateQty(item._id, (item.qty || 0) + 1)} className="w-8 h-8 rounded-full bg-gray-200 items-center justify-center"><Text>+</Text></Pressable>
-      <Pressable onPress={() => removeItem(item._id)} className="ml-3 px-3 py-1 rounded-full bg-red-100"><Text className="text-red-600 text-xs">Remove</Text></Pressable>
-    </View>
-  );
+  const QtyControl = React.memo(({ item }) => {
+    return (
+      <View className="flex-row items-center">
+        <AnimatedPressable onPress={() => updateQty(item._id, Math.max(1, (item.qty || 1) - 1))} className="w-8 h-8 rounded-full bg-gray-200 items-center justify-center" scaleTo={0.85} haptic="selection"><Text>-</Text></AnimatedPressable>
+        <Text className="mx-3 font-semibold">{item.qty || 0}</Text>
+        <AnimatedPressable onPress={() => updateQty(item._id, (item.qty || 0) + 1)} className="w-8 h-8 rounded-full bg-gray-200 items-center justify-center" scaleTo={0.85} haptic="selection"><Text>+</Text></AnimatedPressable>
+        <AnimatedPressable onPress={() => removeItem(item._id)} className="ml-3 px-3 py-1 rounded-full bg-red-100" scaleTo={0.9} haptic="impactLight"><Text className="text-red-600 text-xs">Remove</Text></AnimatedPressable>
+      </View>
+    );
+  });
 
   // Refs for auto-advancing between fields
   const nameRef = useRef(null);
@@ -269,9 +272,19 @@ export default function CheckoutScreen() {
   const landmarkRef = useRef(null);
   const pincodeRef = useRef(null);
 
+  // Entrance animation
+  const slideAnim = useRef(new Animated.Value(42)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: 0, duration: 430, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true })
+    ]).start();
+  }, [slideAnim, fadeAnim]);
+
   return (
     <SafeAreaView className="flex-1 bg-chai-bg" style={{ paddingTop: insets.top }}>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 140 }} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView style={{ flex: 1, opacity: fadeAnim, transform: [{ translateX: slideAnim }] }} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 140 }} showsVerticalScrollIndicator={false}>
         <Text className="text-2xl font-bold mb-4 text-chai-text-primary">Checkout</Text>
 
         {/* Cart Summary */}
@@ -355,7 +368,7 @@ export default function CheckoutScreen() {
             {['Pickup', 'Delivery'].map(opt => {
               const disabled = false;
               return (
-              <Pressable
+              <AnimatedPressable
                 key={opt}
                 onPress={() => {
                   if (disabled) return;
@@ -366,9 +379,11 @@ export default function CheckoutScreen() {
                   }
                 }}
                 className={`flex-1 py-3 rounded-xl ${type === opt ? 'bg-chai-primary' : ''} ${disabled ? 'opacity-40' : ''}`}
+                scaleTo={0.95}
+                haptic="selection"
               >
                 <Text className={`text-center font-medium ${type === opt ? 'text-white' : 'text-chai-text-primary'}`}>{opt}</Text>
-              </Pressable>
+              </AnimatedPressable>
             );})}
           </View>
           
@@ -387,13 +402,13 @@ export default function CheckoutScreen() {
               className="flex-1 bg-white border border-chai-divider rounded-xl px-4 py-3 mr-3 text-chai-text-primary"
             />
             {appliedCoupon ? (
-              <Pressable onPress={() => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(''); Toast.show({ type: 'info', text1: 'Coupon removed' }); }} className="px-4 py-3 rounded-xl bg-gray-200">
+              <AnimatedPressable onPress={() => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(''); Toast.show({ type: 'bannerInfo', text1: 'Coupon removed' }); }} className="px-4 py-3 rounded-xl bg-gray-200" scaleTo={0.92} haptic="selection">
                 <Text className="font-medium text-gray-800">Remove</Text>
-              </Pressable>
+              </AnimatedPressable>
             ) : (
-              <Pressable onPress={applyCoupon} disabled={applyingCoupon} className={`px-4 py-3 rounded-xl ${applyingCoupon ? 'bg-chai-primary opacity-60' : 'bg-chai-primary'}`}>
+              <AnimatedPressable onPress={applyCoupon} disabled={applyingCoupon} className={`px-4 py-3 rounded-xl ${applyingCoupon ? 'bg-chai-primary opacity-60' : 'bg-chai-primary'}`} scaleTo={0.92} haptic="selection">
                 <Text className="font-medium text-white">{applyingCoupon ? 'Applying...' : 'Apply'}</Text>
-              </Pressable>
+              </AnimatedPressable>
             )}
           </View>
           {!!couponMessage && (
@@ -463,9 +478,9 @@ export default function CheckoutScreen() {
               const hidden = false; // never hide COD for delivery
               if (hidden) return null;
               return (
-                <Pressable key={opt} onPress={() => !disabled && setPayment(opt)} className={`flex-1 py-3 rounded-xl ${payment === opt ? 'bg-chai-primary' : ''} ${disabled ? 'opacity-40' : ''}`}>
+                <AnimatedPressable key={opt} onPress={() => !disabled && setPayment(opt)} className={`flex-1 py-3 rounded-xl ${payment === opt ? 'bg-chai-primary' : ''} ${disabled ? 'opacity-40' : ''}`} scaleTo={0.95} haptic="selection">
                   <Text className={`text-center font-medium ${payment === opt ? 'text-white' : 'text-chai-text-primary'}`}>{opt}</Text>
-                </Pressable>
+                </AnimatedPressable>
               );
             })}
           </View>
@@ -477,17 +492,19 @@ export default function CheckoutScreen() {
           )}
           <TextInput value={note} onChangeText={setNote} placeholderTextColor="#757575" placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" returnKeyType="done" />
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Submit bar */}
       <View style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 16 }}>
-        <Pressable
+        <AnimatedPressable
           disabled={!canSubmit || submitting || paying}
           onPress={placeOrder}
           className={`py-4 rounded-full items-center ${!canSubmit || submitting || paying ? 'bg-gray-300' : 'bg-chai-primary'}`}
+          scaleTo={0.97}
+          haptic="impactMedium"
         >
-              <Text className="text-white font-semibold">{paying ? 'Processing payment…' : (submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`)}</Text>
-        </Pressable>
+          <Text className="text-white font-semibold">{paying ? 'Processing payment…' : (submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`)}</Text>
+        </AnimatedPressable>
       </View>
       
     </SafeAreaView>

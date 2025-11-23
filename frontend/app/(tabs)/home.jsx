@@ -1,11 +1,13 @@
 import React, { useEffect, useState, memo } from 'react';
-import { 
-  View, 
-  Text, 
-  Pressable, 
-  FlatList, 
+import {
+  View,
+  Text,
+  FlatList,
   Dimensions,
-  Platform
+  Platform,
+  Animated,
+  Pressable,
+  Easing
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,14 +19,14 @@ import axios from 'axios';
 import { StatusBar } from 'expo-status-bar';
 import { Image as ExpoImage } from 'expo-image';
 import { SearchBar } from '../../components/SearchBar';
+import AnimatedPressable from '../../components/AnimatedPressable';
 import { ImageCarousel } from '../../components/ImageCarousel';
 import Skeleton from '../../components/Skeleton';
+import Toast from 'react-native-toast-message';
 
-// Ensure API URL is correctly loaded from environment variables
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
-const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api'; // Fallback needed
+const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api';
 
-// Function to get the time of day greeting
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good Morning';
@@ -32,7 +34,6 @@ const getGreeting = () => {
   return 'Good Evening';
 };
 
-// Function to get the time of day greeting translation key
 const getGreetingKey = () => {
   const hour = new Date().getHours();
   if (hour < 12) return 'greeting_morning';
@@ -40,41 +41,42 @@ const getGreetingKey = () => {
   return 'greeting_evening';
 };
 
-// --- Your backend should return this data for the carousel ---
-// Use HTTPS to avoid Android cleartext (HTTP) blocking in release builds
 const sliderImages = [
   { _id: '1', imageURL: 'https://admin.chaicafeteria.com/images/category-burger.png' },
   { _id: '2', imageURL: 'https://admin.chaicafeteria.com/images/category-pizza.png' },
   { _id: '3', imageURL: 'https://admin.chaicafeteria.com/images/category-cookies.png' },
 ];
 
+// Specific colors from your screenshots
+const COLORS = {
+  orange: '#EA580C', // Deep Orange
+  black: '#000000',
+  text: '#1F2937',
+  bg: '#FFFBF7', // Very slight off-white/warm bg
+};
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user: authUser } = useAuth();
-    const { t } = useTranslation();
-  // Align with CartContext which exposes `items`
-  const { items: cartItems = [] } = useCart() || {}; // Safely get cart items
+  const { t } = useTranslation();
+  const { items: cartItems = [], addItem } = useCart() || {};
   const [name, setName] = useState('User');
   const [greeting, setGreeting] = useState('Good Morning');
-    const [greetingKey, setGreetingKey] = useState(getGreetingKey());
+  const [greetingKey, setGreetingKey] = useState(getGreetingKey());
   const [categories, setCategories] = useState([]);
+  const [popularItems, setPopularItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  const sliderWidth = Dimensions.get('window').width - 48; // match p-6 (24px)
-  // Carousel state moved into ImageCarousel component to avoid Home re-renders
+  const sliderWidth = Dimensions.get('window').width - 48;
   const bottomPadding = Platform.OS === 'ios' ? Math.max(88, insets.bottom + 88) : 24;
 
-  // Normalize incoming image URLs so they render in Android release builds
   const normalizeImageUrl = (u) => {
     try {
       if (!u || typeof u !== 'string') return null;
-      // Trim and fix protocol-relative
       let url = u.trim();
       if (url.startsWith('//')) url = `https:${url}`;
-      // Prefer HTTPS (cleartext HTTP is blocked in Android release)
       if (url.startsWith('http://')) url = url.replace('http://', 'https://');
-      // If it isn't absolute, prefix with API origin (without /api)
       if (!/^https?:\/\//i.test(url)) {
         const base = API_URL.replace(/\/api$/, '');
         if (url.startsWith('/')) return `${base}${url}`;
@@ -86,59 +88,47 @@ export default function HomeScreen() {
     }
   };
 
-  // Main data fetching effect
   useEffect(() => {
     setGreeting(getGreeting());
-      setGreetingKey(getGreetingKey());
-    const fetchCategories = async () => {
+    setGreetingKey(getGreetingKey());
+    const fetchData = async () => {
       setIsLoading(true);
       try {
-        const res = await axios.get(`${API_URL}/menu/categories`);
-        // We get everything from the DB: name, imageURL, backgroundColor
-        setCategories((res.data.categories || []).slice(0, 6)); // Show max 6
+        const [catRes, itemRes] = await Promise.all([
+          axios.get(`${API_URL}/menu/categories`),
+          axios.get(`${API_URL}/menu/items`)
+        ]);
+        // Filter out 'sandwich' category as requested
+        setCategories((catRes.data.categories || []).filter(c => (c.name || '').toLowerCase() !== 'sandwich'));
+        
+        // Filter for specific popular items: 3 Pizzas, 2 Burgers, 1 Chowmein, 1 Chilli
+        const allItems = itemRes.data.items || [];
+        const getItems = (term, limit) => allItems.filter(i => 
+          (i.name || '').toLowerCase().includes(term)
+        ).slice(0, limit);
+
+        const pizzas = getItems('pizza', 3);
+        const burgers = getItems('burger', 2);
+        const chowmein = getItems('chowmein', 1);
+        const chilli = getItems('chilli', 1);
+
+        setPopularItems([...pizzas, ...burgers, ...chowmein, ...chilli]);
       } catch (err) {
-        console.error('Failed to load categories', err?.message || err);
+        console.error('Failed to load data', err?.message || err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchCategories();
+    fetchData();
   }, []);
 
-  // Update user's name
   useEffect(() => {
     setName(authUser?.name || authUser?.displayName || 'User');
   }, [authUser]);
 
   const totalCartQuantity = cartItems.reduce((sum, item) => sum + (item.qty || 0), 0);
 
-  // --- Render Functions ---
-
-  const renderHeader = () => (
-    <>
-      {/* Carousel - now isolated to prevent Home re-renders on slide change */}
-      <ImageCarousel
-        images={sliderImages}
-        width={sliderWidth}
-        height={176}
-        interval={3000}
-        autoPlay
-        onPressSlide={(i, img) => {
-          // Navigate to Menu; could be extended to deep-links per slide later
-          router.push({ pathname: '/(tabs)/menu', params: { categoryId: 'all' } });
-        }}
-      />
-
-      {/* Categories Title */}
-      <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-2xl font-bold text-chai-text-primary">{t('app.categories')}</Text>
-        <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: 'all' } })} className="px-2 py-1">
-          <Text className="text-sm text-chai-primary font-semibold" numberOfLines={1}>{t('app.see_all')}</Text>
-        </Pressable>
-      </View>
-    </>
-  );
-
+  // --- Fixed Category Card (Matches the outline style) ---
   const CategoryCardBase = ({ item }) => {
     const [loaded, setLoaded] = useState(false);
     const src = (() => {
@@ -148,89 +138,150 @@ export default function HomeScreen() {
     return (
       <Pressable
         onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: item._id } })}
-        className="h-44 rounded-3xl mb-5 overflow-hidden bg-gray-200"
-        style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
+        className="mr-5 items-center"
       >
-        <View className="w-full h-full">
+        {/* Simple black border circle, black background with padding */}
+        <View className="w-20 h-20 rounded-full bg-black mb-2 overflow-hidden border border-black items-center justify-center p-1.5">
           {!loaded && (
             <View className="absolute inset-0">
-              <Skeleton width="100%" height="100%" borderRadius={24} />
+              <Skeleton width="100%" height="100%" borderRadius={100} />
+            </View>
+          )}
+          <ExpoImage
+            source={src}
+            style={{ width: '100%', height: '100%', borderRadius: 100, padding: 6 }} // Slightly smaller to show inside border
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+            onLoadEnd={() => setLoaded(true)}
+          />
+        </View>
+        <Text className="text-black text-md font-semibold text-center capitalize" numberOfLines={1}>
+          {item.name}
+        </Text>
+      </Pressable>
+    );
+  };
+  const CategoryCard = memo(CategoryCardBase);
+
+  // --- Fixed Popular Card (Matches the Pizza Screenshot 1:1) ---
+  const PopularItemCardBase = ({ item }) => {
+    const [loaded, setLoaded] = useState(false);
+    const src = (() => {
+      const u = normalizeImageUrl(item?.imageURL || item?.image);
+      return u ? { uri: u } : require('../../assets/images/chai-cafeteria-icon.png');
+    })();
+    
+    const handleAddToCart = () => {
+      addItem(item);
+      Toast.show({ type: 'bannerSuccess', text1: t('app.added_to_cart'), text2: `${item.name} added` });
+    };
+
+    return (
+      <Pressable
+        onPress={() => router.push({ pathname: '/(tabs)/menu', params: { search: item.name } })}
+        // Dimensions matching portrait card, white bg, thin black border, rounded-3xl
+        className="w-40 mr-4 bg-white border border-black rounded-3xl overflow-hidden" 
+      >
+        {/* Image Area - White background to blend */}
+        <View className="w-full h-36 bg-white items-center justify-center">
+           {!loaded && (
+            <View className="absolute inset-0">
+              <Skeleton width="100%" height="100%" borderRadius={0} />
             </View>
           )}
           <ExpoImage
             source={src}
             style={{ width: '100%', height: '100%' }}
-            contentFit="cover"
+            contentFit="cover" // 'cover' fills the area like the screenshot
             cachePolicy="memory-disk"
-            transition={0}
+            transition={200}
             onLoadEnd={() => setLoaded(true)}
           />
-          {/* Bottom overlay for readability */}
-          <View className="absolute bottom-0 left-0 right-0 h-20 bg-black/35" />
-          <View className="absolute bottom-0 left-0 right-0 p-5">
-            <Text className="text-white text-2xl font-extrabold" numberOfLines={2}>
-              {item.name}
-            </Text>
+        </View>
+        
+        {/* Content Area */}
+        <View className="p-2">
+          <Text className="text-black font-bold text-base mb-2 leading-5" numberOfLines={1}>
+            {item.name}
+          </Text>
+          
+          <View className="flex-row justify-between items-center">
+            {/* Price in Orange */}
+            <Text className="text-orange-600 font-extrabold text-lg">₹{item.price}</Text>
+            
+            {/* Orange Circle Button */}
+            <Pressable 
+              onPress={handleAddToCart}
+              className="bg-orange-600 w-8 h-8 rounded-full items-center justify-center"
+            >
+              <Ionicons name="add" size={20} color="white" />
+            </Pressable>
           </View>
         </View>
       </Pressable>
     );
   };
-  CategoryCardBase.displayName = 'CategoryCard';
-  const CategoryCard = memo(CategoryCardBase);
+  const PopularItemCard = memo(PopularItemCardBase);
 
-  const renderCategoryCard = ({ item }) => <CategoryCard item={item} />;
+  // Animation Refs
+  const slideAnim = React.useRef(new Animated.Value(42)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: 0, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true })
+    ]).start();
+  }, [slideAnim, fadeAnim]);
 
   return (
-    <SafeAreaView className="flex-1 bg-chai-bg pt-5">
+    <SafeAreaView className="flex-1 bg-[#FFFBF7] pt-5 mt-1">
       <StatusBar style="dark" />
       {isLoading ? (
         <>
-          {/* Greeting + Cart (visible even while loading) */}
           <View className="px-6">
             <View className="flex-row justify-between items-center mb-6">
               <View>
-                <Text className="text-xl text-chai-text-secondary font-medium">{t(`app.${greetingKey}`)},</Text>
-                <Text className="text-3xl font-bold text-chai-text-primary" numberOfLines={1}>{name}</Text>
+                <Text className="text-xl text-gray-500 font-medium">{t(`app.${greetingKey}`)},</Text>
+                <Text className="text-3xl font-bold text-black" numberOfLines={1}>{name}</Text>
               </View>
-              <Pressable className="relative p-2 rounded-full">
-                <Ionicons name="cart-outline" size={32} color="#111" />
-              </Pressable>
+              <Ionicons name="cart-outline" size={32} color="#000" />
             </View>
             <SearchBar value={search} onChange={setSearch} onSubmit={() => {}} onClear={() => setSearch('')} />
           </View>
-
-          {/* Skeleton carousel and category tiles */}
           <View className="px-6 mt-4">
             <Skeleton width="100%" height={176} borderRadius={16} style={{ marginBottom: 24 }} />
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} width="100%" height={176} borderRadius={24} style={{ marginBottom: 20 }} />
-            ))}
+            <View className="flex-row">
+                 {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} width={100} height={140} borderRadius={24} style={{ marginRight: 15 }} />
+                 ))}
+            </View>
           </View>
         </>
       ) : (
         <>
-          {/* Greeting + Cart */}
+          {/* Header Section */}
           <View className="px-6">
             <View className="flex-row justify-between items-center mb-6">
               <View>
-                <Text className="text-xl text-chai-text-secondary font-medium">{t(`app.${greetingKey}`)},</Text>
-                <Text className="text-3xl font-bold text-chai-text-primary" numberOfLines={1}>{name}</Text>
+                <Text className="text-xl text-gray-500 font-medium">{t(`app.${greetingKey}`)},</Text>
+                <Text className="text-3xl font-bold text-black" numberOfLines={1}>{name}</Text>
               </View>
-              <Pressable 
-                className="relative p-2 active:bg-gray-200 rounded-full" 
+              <AnimatedPressable 
+                className="relative p-2" 
                 onPress={() => router.push('/cart')}
+                scaleTo={0.9}
               >
-                <Ionicons name="cart-outline" size={32} color="#111" />
+                <Ionicons name="cart-outline" size={30} color="#000" />
                 {totalCartQuantity > 0 && (
-                  <View className="absolute top-0 right-0 bg-red-600 rounded-full w-5 h-5 items-center justify-center border-2 border-gray-50">
-                    <Text className="text-white text-xs font-bold">{totalCartQuantity}</Text>
+                  <View className="absolute top-0 right-0 bg-red-600 rounded-full w-5 h-5 items-center justify-center border-2 border-white">
+                    <Text className="text-white text-[10px] font-bold">{totalCartQuantity}</Text>
                   </View>
                 )}
-              </Pressable>
+              </AnimatedPressable>
             </View>
 
-            {/* Search bar placed below greeting and cart */}
             <SearchBar
               value={search}
               onChange={setSearch}
@@ -241,20 +292,73 @@ export default function HomeScreen() {
               }}
               onClear={() => setSearch('')}
             />
-
-            {/* Quick filters removed by request */}
           </View>
 
-          <FlatList
-            data={categories}
-            renderItem={renderCategoryCard}
-            keyExtractor={c => c._id}
-            ListHeaderComponent={renderHeader}
-            keyboardShouldPersistTaps="always"
-            keyboardDismissMode="none"
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: bottomPadding }}
-            showsVerticalScrollIndicator={false}
-          />
+          <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }], opacity: fadeAnim }}>
+            <Animated.ScrollView 
+              contentContainerStyle={{ paddingBottom: 120 + bottomPadding }}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Carousel */}
+              <View className="mt-4 mb-3 ml-2">
+                <ImageCarousel
+                  images={sliderImages}
+                  width={sliderWidth}
+                  height={176}
+                  interval={3000}
+                  autoPlay
+                  onPressSlide={(i, img) => {
+                    router.push({ pathname: '/(tabs)/menu', params: { categoryId: 'all' } });
+                  }}
+                />
+              </View>
+
+              {/* Categories Section */}
+              <View className="mb-8">
+                <View className="flex-row items-center justify-between px-6 mb-4">
+                  {/* Styled Header */}
+                  <Text className="text-xl font-bold text-black">
+                    {t('app.categories')}
+                  </Text>
+                  <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: 'all' } })}>
+                    <Text className="text-sm text-orange-600 font-bold" numberOfLines={1}>{t('app.see_all')}</Text>
+                  </Pressable>
+                </View>
+                <FlatList
+                  horizontal
+                  data={categories}
+                  renderItem={({ item }) => <CategoryCard item={item} />}
+                  keyExtractor={c => c._id}
+                  contentContainerStyle={{ paddingHorizontal: 24 }}
+                  showsHorizontalScrollIndicator={false}
+                />
+              </View>
+
+              {/* Most Popular Section */}
+              {popularItems.length > 0 && (
+                <View className="mb-6">
+                  <View className="flex-row items-center justify-between px-6 mb-4">
+                    {/* Styled Header */}
+                    <Text className="text-xl font-bold text-black" numberOfLines={1}>
+                      Most Popular
+                    </Text>
+                    <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu' })}>
+                      <Text className="text-sm text-orange-600 font-bold" numberOfLines={1}>{t('app.see_all')}</Text>
+                    </Pressable>
+                  </View>
+                  <FlatList
+                    horizontal
+                    data={popularItems}
+                    renderItem={({ item }) => <PopularItemCard item={item} />}
+                    keyExtractor={i => i._id}
+                    contentContainerStyle={{ paddingHorizontal: 24 }}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+              )}
+
+            </Animated.ScrollView>
+          </Animated.View>
         </>
       )}
     </SafeAreaView>

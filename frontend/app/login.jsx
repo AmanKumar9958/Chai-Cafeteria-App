@@ -1,6 +1,8 @@
 // frontend/app/login.jsx
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Image, Animated, Easing } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, Image, Animated, Easing } from 'react-native';
+import AnimatedPressable from '../components/AnimatedPressable';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
@@ -47,6 +49,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-chai-bg">
+      <LanguageSwitcher style={{ position: 'absolute', top: 8, right: 16, zIndex: 50 }} />
       <StatusBar style="dark" />
       <Animated.View
         className="flex-1 justify-center p-8"
@@ -54,7 +57,7 @@ export default function LoginScreen() {
       >
         <View className="items-center mb-10">
           <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
-          <Text className="text-3xl font-bold mt-4 text-chai-text-primary">{t('app.welcome_back')}</Text>
+          <Text className="text-3xl font-bold mt-4 text-chai-text-primary py-1">{t('app.welcome_back')}</Text>
           <Text className="text-chai-text-secondary mt-2 font-semibold">{t('app.login_to_account')}</Text>
         </View>
 
@@ -84,22 +87,23 @@ export default function LoginScreen() {
             returnKeyType="done"
             onSubmitEditing={handleLogin}
           />
-          <Pressable onPress={() => setShowPassword(!showPassword)} className="p-4">
+          <AnimatedPressable onPress={() => setShowPassword(!showPassword)} className="p-4" scaleTo={0.85} haptic={false}>
             <Feather name={showPassword ? 'eye-off' : 'eye'} size={24} color="#757575" />
-          </Pressable>
+          </AnimatedPressable>
         </View>
 
-        <Pressable
+        <AnimatedPressable
           onPress={handleLogin}
           className="bg-chai-primary p-4 rounded-xl items-center"
           disabled={isLoading}
+          haptic="selection"
         >
           {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
             <Text className="text-white text-lg font-bold">{t('app.login')}</Text>
           )}
-        </Pressable>
+        </AnimatedPressable>
 
         <View className="flex-row justify-end mt-3">
           <Link href="/forgot-password"><Text className="text-chai-primary font-semibold">{t('app.forgot_password')}</Text></Link>

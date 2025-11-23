@@ -79,6 +79,8 @@ function MainLayout() {
 
 export default function RootLayout() {
   // Stylish toast config with brand colors and top positioning by default
+  // Centralized toast variants (all forced to top via <Toast position="top" /> below)
+  // Added lightweight "banner" variants for higher visibility (slimmer height, bolder text).
   const toastConfig = {
     success: (props) => (
       <BaseToast
@@ -104,6 +106,32 @@ export default function RootLayout() {
         contentContainerStyle={{ paddingHorizontal: 15 }}
         text1Style={{ fontSize: 16, fontWeight: '700', color: '#1E3A8A' }}
         text2Style={{ fontSize: 13, color: '#1E3A8A' }}
+      />
+    ),
+    bannerSuccess: (props) => (
+      <BaseToast
+        {...props}
+        style={{ backgroundColor: '#0F172A', borderLeftColor: '#22c55e', borderRadius: 18, minHeight: 56 }}
+        contentContainerStyle={{ paddingHorizontal: 18 }}
+        text1Style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}
+        text2Style={{ fontSize: 12, color: '#E2E8F0' }}
+      />
+    ),
+    bannerInfo: (props) => (
+      <BaseToast
+        {...props}
+        style={{ backgroundColor: '#0F172A', borderLeftColor: '#3b82f6', borderRadius: 18, minHeight: 56 }}
+        contentContainerStyle={{ paddingHorizontal: 18 }}
+        text1Style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}
+        text2Style={{ fontSize: 12, color: '#E2E8F0' }}
+      />
+    ),
+    bannerError: (props) => (
+      <ErrorToast
+        {...props}
+        style={{ backgroundColor: '#0F172A', borderLeftColor: '#ef4444', borderRadius: 18, minHeight: 56 }}
+        text1Style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}
+        text2Style={{ fontSize: 12, color: '#E2E8F0' }}
       />
     ),
   };

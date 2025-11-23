@@ -1,6 +1,6 @@
 // frontend/app/(tabs)/profile.jsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, Alert, ActivityIndicator, TextInput, Animated, Easing } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Platform } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +9,8 @@ import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
 import { setLanguage } from '../../i18n';
+import AnimatedPressable from '../../components/AnimatedPressable';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
@@ -53,6 +55,16 @@ export default function ProfileScreen() {
     ]);
   };
 
+  // Entrance animation hooks MUST run before any conditional returns to keep hook order stable.
+  const slideAnim = React.useRef(new Animated.Value(38)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: 0, duration: 430, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true })
+    ]).start();
+  }, [slideAnim, fadeAnim]);
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-chai-bg">
@@ -65,6 +77,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-chai-bg p-6" style={{ paddingBottom: bottomPadding }}>
+      <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }], opacity: fadeAnim }}>
       <View className="items-center mt-2 mb-6">
         <View className="w-24 h-24 rounded-full bg-gray-100 items-center justify-center">
           <Text className="text-4xl font-bold text-chai-text-primary">{(display.name || 'U').charAt(0)}</Text>
@@ -128,12 +141,12 @@ export default function ProfileScreen() {
       </View>
 
       {!isEditing ? (
-        <Pressable onPress={() => setIsEditing(true)} className="mt-6 border-2 border-chai-primary rounded-xl p-4 items-center">
+        <AnimatedPressable onPress={() => setIsEditing(true)} className="mt-6 border-2 border-chai-primary rounded-xl p-4 items-center" scaleTo={0.95} haptic="selection">
           <Text className="text-chai-primary font-bold">{t('app.edit_profile')}</Text>
-        </Pressable>
+        </AnimatedPressable>
       ) : (
         <View className="mt-6">
-          <Pressable onPress={async () => {
+          <AnimatedPressable onPress={async () => {
             // Save profile
             try {
               const res = await axios.put(`${API_URL}/auth/me`, form, { headers: { Authorization: `Bearer ${userToken}` } });
@@ -141,40 +154,33 @@ export default function ProfileScreen() {
               await refreshProfile();
               setUser(res.data.user);
               setIsEditing(false);
-              Toast.show({ type: 'success', text1: 'Profile updated' });
+              Toast.show({ type: 'bannerSuccess', text1: 'Profile updated' });
             } catch (err) {
               console.error('Failed to update profile', err?.response?.data || err.message);
               const msg = err?.response?.data?.msg || err?.response?.data || 'Failed to update profile';
-              Toast.show({ type: 'error', text1: 'Update failed', text2: String(msg) });
+              Toast.show({ type: 'bannerError', text1: 'Update failed', text2: String(msg) });
             }
-          }} className="border-2 border-chai-primary rounded-xl p-4 items-center">
+          }} className="border-2 border-chai-primary rounded-xl p-4 items-center" scaleTo={0.95} haptic="selection">
             <Text className="text-chai-primary font-bold">{t('app.save_changes')}</Text>
-          </Pressable>
+          </AnimatedPressable>
 
-          <Pressable onPress={() => { setIsEditing(false); setForm({ name: user?.name || '', phone: user?.phone || '', address1: user?.address1 || '', address2: user?.address2 || '' }); }} className="mt-4 border-2 border-chai-divider rounded-xl p-4 items-center">
+          <AnimatedPressable onPress={() => { setIsEditing(false); setForm({ name: user?.name || '', phone: user?.phone || '', address1: user?.address1 || '', address2: user?.address2 || '' }); }} className="mt-4 border-2 border-chai-divider rounded-xl p-4 items-center" scaleTo={0.95} haptic={false}>
             <Text className="text-chai-text-secondary">{t('app.cancel')}</Text>
-          </Pressable>
+          </AnimatedPressable>
         </View>
       )}
 
       {!!user && (
-        <Pressable onPress={confirmLogout} className="mt-4 bg-chai-primary rounded-xl p-4 items-center">
+        <AnimatedPressable onPress={confirmLogout} className="mt-4 bg-chai-primary rounded-xl p-4 items-center" scaleTo={0.95} haptic="selection">
           <Text className="text-white font-bold">{t('app.logout')}</Text>
-        </Pressable>
+        </AnimatedPressable>
       )}
 
       {/* Language switcher */}
-      <View className="mt-6">
-        <Text className="text-chai-text-secondary mb-2">{t('app.language')}</Text>
-        <View className="flex-row gap-3">
-          <Pressable onPress={() => setLanguage('en')} className={`px-4 py-2 rounded-xl border ${i18n.language.startsWith('en') ? 'border-chai-primary' : 'border-chai-divider'}`}>
-            <Text className={`${i18n.language.startsWith('en') ? 'text-chai-primary' : 'text-chai-text-primary'}`}>{t('app.english')}</Text>
-          </Pressable>
-          <Pressable onPress={() => setLanguage('hi')} className={`px-4 py-2 rounded-xl border ${i18n.language.startsWith('hi') ? 'border-chai-primary' : 'border-chai-divider'}`}>
-            <Text className={`${i18n.language.startsWith('hi') ? 'text-chai-primary' : 'text-chai-text-primary'}`}>{t('app.hindi')}</Text>
-          </Pressable>
-        </View>
+      <View className="mt-1">
+        <LanguageSwitcher style={{ position: 'absolute', top: 0, left: 0, zIndex: 50 }} />
       </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }

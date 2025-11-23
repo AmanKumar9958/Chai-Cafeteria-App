@@ -67,12 +67,12 @@ export const AuthProvider = ({ children }) => {
         await AsyncStorage.removeItem('userToken');
         throw e;
       }
-      Toast.show({ type: 'success', text1: 'Welcome back!' });
+      Toast.show({ type: 'bannerSuccess', text1: 'Welcome back!' });
       router.replace('/(tabs)/home'); // Navigate to home on successful login
     } catch (error) {
       const serverMsg = error?.response?.data?.msg || error?.response?.data || error?.message || 'Unknown error';
       console.error('Login failed:', serverMsg);
-      Toast.show({ type: 'error', text1: 'Login failed', text2: String(serverMsg) });
+      Toast.show({ type: 'bannerError', text1: 'Login failed', text2: String(serverMsg) });
     }
   };
 
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
       } catch (e) {
         console.error('Failed to fetch profile after authenticateWithToken', e?.message || e);
       }
-      Toast.show({ type: 'success', text1: welcomeText });
+      Toast.show({ type: 'bannerSuccess', text1: welcomeText });
       router.replace('/(tabs)/home');
     } catch (e) {
       console.error('Failed to store token', e);
@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }) => {
     setUserToken(null);
     setUser(null);
     await AsyncStorage.removeItem('userToken');
-    Toast.show({ type: 'success', text1: 'Logged out' });
+    Toast.show({ type: 'bannerInfo', text1: 'Logged out' });
     router.replace('/login'); // Navigate to login
   };
 

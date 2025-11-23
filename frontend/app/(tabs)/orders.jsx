@@ -1,11 +1,12 @@
 // frontend/app/(tabs)/Orders.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ActivityIndicator, FlatList, Pressable, Animated, Easing, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, FlatList, Animated, Easing, Platform, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
+import AnimatedPressable from '../../components/AnimatedPressable';
 import Toast from 'react-native-toast-message';
 import { router } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
@@ -102,6 +103,16 @@ export default function OrdersScreen() {
     );
   };
 
+  // Entrance animation hooks MUST be declared before any conditional returns (Rules of Hooks)
+  const slideAnim = useRef(new Animated.Value(36)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: 0, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true })
+    ]).start();
+  }, [slideAnim, fadeAnim]);
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-chai-bg">
@@ -111,18 +122,37 @@ export default function OrdersScreen() {
   }
 
   if (!orders || orders.length === 0) {
-    return (<SafeAreaView className="flex-1 items-center justify-center bg-chai-bg px-8"><View className="items-center"><ExpoImage source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2822/2822682.png' }} style={{ width: 144, height: 144, marginBottom: 16 }} contentFit="contain" cachePolicy="memory-disk" /><Text className="text-lg font-semibold text-chai-text-primary mb-1 ">No orders yet</Text><Text className="text-sm text-chai-text-secondary text-center mb-4">Your past orders will show up here once you place one.</Text><Pressable onPress={() => router.push('/(tabs)/menu')} className="bg-chai-primary px-5 py-3 rounded-full"><Text className="text-white font-semibold">Browse menu</Text></Pressable></View></SafeAreaView>);
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-chai-bg px-8">
+        <Animated.View style={{ transform: [{ translateX: slideAnim }], opacity: fadeAnim }}>
+          <View className="items-center">
+            <ExpoImage
+              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2822/2822682.png' }}
+              style={{ width: 144, height: 144, marginBottom: 16 }}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+            <Text className="text-lg font-semibold text-chai-text-primary mb-1">No orders yet</Text>
+            <Text className="text-sm text-chai-text-secondary text-center mb-4">Your past orders will show up here once you place one.</Text>
+            <Pressable onPress={() => router.push('/(tabs)/menu')} className="bg-chai-primary px-5 py-3 rounded-full">
+              <Text className="text-white font-semibold">Browse menu</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView className="flex-1 bg-chai-bg pt-4 mt-4" style={{ paddingBottom: bottomPadding }}>
       <View className="px-4 pb-2 flex-row items-center justify-between">
-        <Text className="text-3xl font-extrabold text-chai-text-primary">{t('app.my_orders')}</Text>
-        <Pressable onPress={fetchOrders} className="flex-row items-center gap-1 px-3 py-2 bg-chai-primary rounded-full">
+        <Text numberOfLines={1} adjustsFontSizeToFit className="text-3xl font-extrabold text-chai-text-primary flex-1 mr-2 py-2">{`${t('app.my_orders')}`}</Text>
+        <AnimatedPressable onPress={fetchOrders} className="flex-row items-center gap-1 px-3 py-2 bg-chai-primary rounded-full" scaleTo={0.92} haptic="selection">
           <Ionicons name="refresh" size={16} color="#fff" />
-          <Text className="text-chai-text-primary font-semibold">{t('app.refresh')}</Text>
-        </Pressable>
+          <Text className="text-chai-text-primary font-semibold">{`${t('app.refresh')}`}</Text>
+        </AnimatedPressable>
       </View>
+      <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }], opacity: fadeAnim }}>
       <FlatList
         data={orders}
         keyExtractor={o => o._id || String(o.id)}
@@ -204,25 +234,29 @@ export default function OrdersScreen() {
             </View>
             {String(item.status).toLowerCase() === 'delivered' && (
               <View className="mt-3">
-                <Pressable
+                <AnimatedPressable
                   onPress={() => {
                     try {
                       addItemsBatch && addItemsBatch(item.items || []);
-                      Toast.show({ type: 'success', text1: 'Reordered', text2: 'Items added to cart', position: 'bottom' });
+                      // Use bannerSuccess variant and rely on global top positioning
+                      Toast.show({ type: 'bannerSuccess', text1: 'Reordered', text2: 'Items added to cart' });
                       router.push('/cart');
                     } catch (e) {
-                      Toast.show({ type: 'error', text1: 'Failed to reorder', text2: String(e?.message || e) });
+                      Toast.show({ type: 'bannerError', text1: 'Failed to reorder', text2: String(e?.message || e) });
                     }
                   }}
                   className="bg-chai-primary py-3 rounded-full items-center"
+                  scaleTo={0.95}
+                  haptic="selection"
                 >
                   <Text className="text-white font-semibold">Reorder</Text>
-                </Pressable>
+                </AnimatedPressable>
               </View>
             )}
           </View>
         )}
       />
+      </Animated.View>
     </SafeAreaView>
   );
 }

@@ -88,6 +88,9 @@
     "payment_success": "Payment successful",
     "order_placed_short": "Order placed!",
     "payment_failed": "Payment failed",
-    "coupon_delivery_discount": "Delivery Discount"
+    "coupon_delivery_discount": "Delivery Discount",
+    "my_cart": "My Cart",
+    "close": "Close",
+    "clear_cart": "Clear Cart"
   }
 }
