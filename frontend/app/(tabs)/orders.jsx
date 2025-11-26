@@ -132,10 +132,10 @@ export default function OrdersScreen() {
               contentFit="contain"
               cachePolicy="memory-disk"
             />
-            <Text className="text-lg font-semibold text-chai-text-primary mb-1">No orders yet</Text>
-            <Text className="text-sm text-chai-text-secondary text-center mb-4">Your past orders will show up here once you place one.</Text>
+            <Text className="text-lg font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{t('app.no_orders_yet')}</Text>
+            <Text className="text-sm text-chai-text-secondary text-center mb-4">{t('app.no_orders_yet_description')}</Text>
             <Pressable onPress={() => router.push('/(tabs)/menu')} className="bg-chai-primary px-5 py-3 rounded-full">
-              <Text className="text-white font-semibold">Browse menu</Text>
+              <Text className="text-white font-semibold">{t('app.browse_menu')}</Text>
             </Pressable>
           </View>
         </Animated.View>
@@ -144,12 +144,12 @@ export default function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-chai-bg pt-4 mt-4" style={{ paddingBottom: bottomPadding }}>
+    <SafeAreaView className="flex-1 bg-chai-bg pt-4 mt-4" style={{ paddingBottom: bottomPadding + 40 }}>
       <View className="px-4 pb-2 flex-row items-center justify-between">
         <Text numberOfLines={1} adjustsFontSizeToFit className="text-3xl font-extrabold text-chai-text-primary flex-1 mr-2 py-2">{`${t('app.my_orders')}`}</Text>
         <AnimatedPressable onPress={fetchOrders} className="flex-row items-center gap-1 px-3 py-2 bg-chai-primary rounded-full" scaleTo={0.92} haptic="selection">
           <Ionicons name="refresh" size={16} color="#fff" />
-          <Text className="text-chai-text-primary font-semibold">{`${t('app.refresh')}`}</Text>
+          <Text className="text-white font-semibold">{`${t('app.refresh')}`}</Text>
         </AnimatedPressable>
       </View>
       <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }], opacity: fadeAnim }}>

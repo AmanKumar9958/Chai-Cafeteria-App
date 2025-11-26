@@ -31,7 +31,7 @@ export default function ResetPasswordScreen() {
       Toast.show({ type: 'bannerSuccess', text1: t('app.reset_password'), text2: t('app.login') });
       router.replace('/login');
     } catch (e) {
-      const msg = e?.response?.data?.msg || e?.message || 'Failed to reset password';
+      const msg = e?.response?.data?.msg || e?.response?.data?.message || e?.message || 'Failed to reset password';
       Toast.show({ type: 'bannerError', text1: 'Reset failed', text2: String(msg) });
     } finally {
       setLoading(false);

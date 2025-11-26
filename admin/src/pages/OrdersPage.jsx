@@ -43,7 +43,9 @@ export default function OrdersPage() {
                 <div>
                   <strong className="text-gray-800">Order ID: {o._id || o.id}</strong>
                   <div className="text-sm text-gray-600">{(o.items || []).length} items • <span className="font-medium">₹{o.total || o.amount || 0}</span></div>
-                  <div className="mt-1 text-xs text-gray-500">Payment: {o.paymentMethod || 'N/A'}</div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    Payment: {o.paymentMethod || 'N/A'} • Type: <span className={`font-medium ${o.orderType === 'Delivery' ? 'text-blue-600' : 'text-amber-600'}`}>{o.orderType || 'Pickup'}</span>
+                  </div>
                   {o.createdAt && (
                     <div className="mt-1 text-xs text-gray-500">Placed on: {new Date(o.createdAt).toLocaleString()}</div>
                   )}
@@ -66,8 +68,12 @@ export default function OrdersPage() {
               <div className="mt-3 grid sm:grid-cols-2 gap-2 text-sm text-gray-700">
                 <div><span className="text-gray-500">Name:</span> {o.customerName || '—'}</div>
                 <div><span className="text-gray-500">Phone:</span> {o.phone || '—'}</div>
-                <div className="sm:col-span-2"><span className="text-gray-500">Address:</span> {[o.address1, o.address2, o.landmark].filter(Boolean).join(', ') || '—'}</div>
-                <div><span className="text-gray-500">Pincode:</span> {o.pincode || '—'}</div>
+                {o.orderType === 'Delivery' && (
+                  <>
+                    <div className="sm:col-span-2"><span className="text-gray-500">Address:</span> {[o.address1, o.address2, o.landmark].filter(Boolean).join(', ') || '—'}</div>
+                    <div><span className="text-gray-500">Pincode:</span> {o.pincode || '—'}</div>
+                  </>
+                )}
               </div>
               {/* Coupon details: always show a clear value; avoid showing just 0 */}
               <div className="mt-2 text-sm">

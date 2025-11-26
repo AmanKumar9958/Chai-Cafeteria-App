@@ -101,7 +101,14 @@
     "no_internet": "कोई इंटरनेट कनेक्शन नहीं",
     "no_internet_hint": "कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।",
     "close": "बंद करें",
-    "clear_cart": "कार्ट साफ़ करें"
+    "clear_cart": "कार्ट साफ़ करें",
+    "show_more": "और दिखाएँ",
+    "no_orders_yet": "अभी तक कोई ऑर्डर नहीं",
+    "no_orders_yet_description": "आपके पिछले ऑर्डर यहाँ दिखाई देंगे जब आप एक ऑर्डर करेंगे।",
+    "browse_menu": "मेनू देखें",
+    "most_popular": "सबसे लोकप्रिय",
+    "discover_delicious_pizzas": "स्वादिष्ट पिज़्ज़ा खोजें",
+    "discover_wide_range_burgers": "वाइड रेंज के बर्गर"
 
   }
 }

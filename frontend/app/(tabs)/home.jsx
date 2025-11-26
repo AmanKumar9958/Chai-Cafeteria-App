@@ -55,6 +55,7 @@ const COLORS = {
   bg: '#FFFBF7', // Very slight off-white/warm bg
 };
 
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user: authUser } = useAuth();
@@ -65,6 +66,8 @@ export default function HomeScreen() {
   const [greetingKey, setGreetingKey] = useState(getGreetingKey());
   const [categories, setCategories] = useState([]);
   const [popularItems, setPopularItems] = useState([]);
+  const [pizzaItems, setPizzaItems] = useState([]); // New section
+  const [burgerItems, setBurgerItems] = useState([]); // New section
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -113,6 +116,15 @@ export default function HomeScreen() {
         const chilli = getItems('chilli', 1);
 
         setPopularItems([...pizzas, ...burgers, ...chowmein, ...chilli]);
+
+        // Discover Delicious Pizzas section: 4 pizzas
+        const discoverPizzas = allItems.filter(i => (i.name || '').toLowerCase().includes('pizza')).slice(0, 4);
+        setPizzaItems(discoverPizzas);
+
+        // Wide range of burgers
+        const discoverBurgers = allItems.filter(i => (i.name || '').toLowerCase().includes('burger')).slice(0, 4);
+        setBurgerItems(discoverBurgers);
+
       } catch (err) {
         console.error('Failed to load data', err?.message || err);
       } finally {
@@ -334,13 +346,13 @@ export default function HomeScreen() {
                 />
               </View>
 
+
               {/* Most Popular Section */}
               {popularItems.length > 0 && (
                 <View className="mb-6">
                   <View className="flex-row items-center justify-between px-6 mb-4">
-                    {/* Styled Header */}
                     <Text className="text-xl font-bold text-black" numberOfLines={1}>
-                      Most Popular
+                      {t('app.most_popular')}
                     </Text>
                     <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu' })}>
                       <Text className="text-sm text-orange-600 font-bold" numberOfLines={1}>{t('app.see_all')}</Text>
@@ -349,6 +361,64 @@ export default function HomeScreen() {
                   <FlatList
                     horizontal
                     data={popularItems}
+                    renderItem={({ item }) => <PopularItemCard item={item} />}
+                    keyExtractor={i => i._id}
+                    contentContainerStyle={{ paddingHorizontal: 24 }}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+              )}
+
+              {/* Discover Delicious Pizzas Section */}
+              {pizzaItems.length > 0 && (
+                <View className="mb-6 mt-4">
+                  <View className="flex-row items-center justify-between px-6 mb-4">
+                    <Text className="text-xl font-bold text-black" numberOfLines={1}>
+                      {t('app.discover_delicious_pizzas')}
+                    </Text>
+                    {(() => {
+                      // Find pizza category _id from categories
+                      const pizzaCat = categories.find(c => (c.name || '').toLowerCase().includes('pizza'));
+                      const pizzaCatId = pizzaCat?._id || 'all';
+                      return (
+                        <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: pizzaCatId } })}>
+                          <Text className="text-sm text-orange-600 font-bold" numberOfLines={1}>{t('app.see_all')}</Text>
+                        </Pressable>
+                      );
+                    })()}
+                  </View>
+                  <FlatList
+                    horizontal
+                    data={pizzaItems}
+                    renderItem={({ item }) => <PopularItemCard item={item} />}
+                    keyExtractor={i => i._id}
+                    contentContainerStyle={{ paddingHorizontal: 24 }}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+              )}
+
+              {/* Wide range of Burgers */}
+              {burgerItems.length > 0 && (
+                <View className="mb-6 mt-4">
+                  <View className="flex-row items-center justify-between px-6 mb-4">
+                    <Text className="text-xl font-bold text-black" numberOfLines={1}>
+                      {t('app.discover_wide_range_burgers')}
+                    </Text>
+                    {(() => {
+                      // Find burger category _id from categories
+                      const burgerCat = categories.find(c => (c.name || '').toLowerCase().includes('burger'));
+                      const burgerCatId = burgerCat?._id || 'all';
+                      return (
+                        <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: burgerCatId } })}>
+                          <Text className="text-sm text-orange-600 font-bold" numberOfLines={1}>{t('app.see_all')}</Text>
+                        </Pressable>
+                      );
+                    })()}
+                  </View>
+                  <FlatList
+                    horizontal
+                    data={burgerItems}
                     renderItem={({ item }) => <PopularItemCard item={item} />}
                     keyExtractor={i => i._id}
                     contentContainerStyle={{ paddingHorizontal: 24 }}

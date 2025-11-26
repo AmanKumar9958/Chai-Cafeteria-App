@@ -40,9 +40,9 @@ function MainLayout() {
         try { await scheduleOneOffNotification(10); } catch {}
       }
       // Optional: show a toast in foreground when notifications arrive
-      unsubscribe = subscribeForegroundNotification(() => {
-        Toast.show({ type: 'info', text1: 'New update', text2: 'Check your orders for latest status.' });
-      });
+      // unsubscribe = subscribeForegroundNotification(() => {
+      //   Toast.show({ type: 'info', text1: 'New update', text2: 'Check your orders for latest status.' });
+      // });
       // When user taps a notification, navigate to Orders
       unsubscribeResponse = subscribeNotificationResponse(() => {
         try { router.push('/(tabs)/orders'); } catch {}

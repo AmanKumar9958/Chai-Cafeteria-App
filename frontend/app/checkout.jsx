@@ -233,7 +233,50 @@ export default function CheckoutScreen() {
     setApplyingCoupon(true);
     try {
       const subtotal = items.reduce((s, it) => s + (Number(it.price) * (it.qty || 0)), 0);
-      const { data } = await axios.post(`${API_URL}/coupons/validate`, { code, subtotal, orderType: type });
+      // Pass userId implicitly via auth token if needed, but validate endpoint is public.
+      // However, to check usage, we need to identify the user.
+      // The backend validateCoupon now accepts userId in body.
+      // We can decode the token or just rely on the backend to check if we pass it.
+      // But wait, validateCoupon is public and doesn't use auth middleware.
+      // We should probably update validateCoupon to use auth middleware OR pass userId manually if we have it.
+      // Since we have userToken, let's decode it or just pass it if we can.
+      // Actually, the best way is to make the validate endpoint authenticated or pass the user ID.
+      // Let's try passing the user ID if we can get it from context, or just let the backend handle it if we send the token.
+      // But the current axios call doesn't send the token.
+      
+      // Let's send the token in headers so backend can identify user if it wants to (though currently validateCoupon doesn't use auth middleware).
+      // We need to update the frontend to send the user ID or token.
+      // Since we don't have the user ID easily available in a variable here (only token), 
+      // and decoding it on client side requires a library, let's just send the token and let backend handle it?
+      // But wait, the backend `validateCoupon` doesn't use `auth` middleware.
+      
+      // Let's just pass the user ID if we have it. 
+      // We can get the user profile first? No that's slow.
+      // Let's just update the backend to optionally accept a token or just rely on the final order placement check.
+      // BUT the user wants to know *before* placing order.
+      
+      // Let's update the `validateCoupon` call to include the Authorization header.
+      // And update the backend `validateCoupon` to decode it if present.
+      // OR simpler: The `useAuth` context might have the user object?
+      // Let's check `useAuth`.
+      
+      // Checking `useAuth` usage in `checkout.jsx`: `const { userToken } = useAuth();`
+      // It doesn't seem to expose the user object directly in this file.
+      
+      // Let's just send the token in the header.
+      // And I will update the backend `validateCoupon` to use the `auth` middleware optionally or manually verify token.
+      
+      // Actually, I already updated `validateCoupon` to look for `userId` in `req.body`.
+      // So I need to send `userId`.
+      // I'll fetch the user profile once on mount if token exists, or just decode the token if I could.
+      // Let's look at `AuthContext.jsx` to see if it exposes `user`.
+      
+      // For now, I will just send the token in the header and update the backend to extract user from it.
+      // This is cleaner than passing userId in body which can be spoofed.
+      
+      const headers = userToken ? { Authorization: `Bearer ${userToken}` } : {};
+      const { data } = await axios.post(`${API_URL}/coupons/validate`, { code, subtotal, orderType: type }, { headers });
+      
       if (data && data.valid) {
         setAppliedCoupon({ code: data.coupon.code, type: data.coupon.type, value: data.coupon.value, discount: data.discount || 0, freeDelivery: !!data.freeDelivery });
         setCouponMessage('Coupon applied');

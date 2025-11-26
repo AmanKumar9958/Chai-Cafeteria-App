@@ -26,7 +26,7 @@ export default function ForgotPasswordScreen() {
       Toast.show({ type: 'bannerSuccess', text1: t('app.otp_sent'), text2: t('app.otp_sent_to', { email }) });
       router.push({ pathname: '/reset-password', params: { email } });
     } catch (e) {
-      const msg = e?.response?.data?.msg || e?.message || 'Failed to send OTP';
+      const msg = e?.response?.data?.msg || e?.response?.data?.message || e?.message || 'Failed to send OTP';
       Toast.show({ type: 'bannerError', text1: 'Request failed', text2: String(msg) });
     } finally {
       setLoading(false);

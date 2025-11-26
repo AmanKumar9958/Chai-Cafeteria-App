@@ -28,6 +28,7 @@ export default function MenuScreen() {
   const [categories, setCategories] = useState([{ _id: 'all', name: 'All' }]);
   const [selected, setSelected] = useState(initialCategory);
   const [items, setItems] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(6); // For 'all' category pagination
   const [isLoadingCats, setIsLoadingCats] = useState(true);
   const [isLoadingItems, setIsLoadingItems] = useState(true);
   const { addItem, items: itemsInCart } = useCart();
@@ -125,6 +126,7 @@ export default function MenuScreen() {
           res = await axios.get(`${API_URL}/menu/items`, { params: { category: selected } });
         }
         setItems(res.data?.items || []);
+        setVisibleCount(6); // Reset visible count when category/search changes
       } catch (err) {
         console.error('Failed to load items:', err);
         setItems([]);
@@ -141,12 +143,12 @@ export default function MenuScreen() {
     return (
       <AnimatedPressable
         onPress={() => handleSelectCategory(item._id)}
-        className={`p-3 mr-3 rounded-lg items-center justify-center border ${selected === item._id ? 'bg-chai-primary border-chai-primary' : 'bg-white border-chai-divider'}`}
+        className={`p-1 mr-3 rounded-full items-center justify-center border ${selected === item._id ? 'bg-chai-primary border-chai-primary' : 'bg-white border-chai-divider'}`}
         style={{ minWidth: 96, height: 48 }}
         scaleTo={0.9}
         haptic={false}
       >
-        <Text numberOfLines={1} ellipsizeMode="tail" className={`font-semibold ${selected === item._id ? 'text-white' : 'text-chai-text-secondary'}`}>{label}</Text>
+        <Text numberOfLines={1} ellipsizeMode="tail" className={`font-semibold text-lg ${selected === item._id ? 'text-white' : 'text-chai-text-secondary'}`}>{label}</Text>
       </AnimatedPressable>
     );
   };
@@ -216,7 +218,7 @@ export default function MenuScreen() {
         </View>
       </View>
       <FlatList
-        data={items}
+        data={selected === 'all' ? items.slice(0, visibleCount) : items}
         renderItem={renderItemCard}
         keyExtractor={(item) => item._id}
         numColumns={2}
@@ -266,14 +268,30 @@ export default function MenuScreen() {
         ) : (
           <View className="py-10 items-center px-8">
             <ExpoImage source={{ uri: 'https://cdn-icons-png.flaticon.com/512/562/562678.png' }} style={{ width: 144, height: 144, marginBottom: 12 }} contentFit="contain" />
-            <Text className="text-lg font-semibold text-chai-text-primary mb-1">{t('app.nothing_here')}</Text>
+            <Text className="text-lg font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{t('app.nothing_here')}</Text>
             <Text className="text-sm text-chai-text-secondary text-center">{t('app.nothing_here_hint')}</Text>
             <AnimatedPressable onPress={() => setSelected('all')} className="mt-4 bg-chai-primary px-5 py-3 rounded-full" haptic="selection" scaleTo={0.93}>
               <Text className="text-white font-semibold">{t('app.browse_all_items')}</Text>
             </AnimatedPressable>
           </View>
         )}
-        ListFooterComponent={<View style={{ height: checkoutBarHeight + insets.bottom + 5 }} />}
+        ListFooterComponent={
+          <>
+            {selected === 'all' && items.length > visibleCount && (
+              <View className="w-full items-center mb-2 mt-4">
+                <AnimatedPressable
+                  onPress={() => setVisibleCount(v => Math.min(v + 6, items.length))}
+                  className="bg-chai-primary px-6 py-3 rounded-full"
+                  haptic="selection"
+                  scaleTo={0.95}
+                >
+                  <Text className="text-white font-semibold">Show More</Text>
+                </AnimatedPressable>
+              </View>
+            )}
+            <View style={{ height: checkoutBarHeight + insets.bottom + 5 }} />
+          </>
+        }
         contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: bottomPadding }}
         showsVerticalScrollIndicator={false}
       />
