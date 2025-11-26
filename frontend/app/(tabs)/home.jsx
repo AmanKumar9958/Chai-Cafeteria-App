@@ -352,7 +352,7 @@ export default function HomeScreen() {
                 <View className="mb-6">
                   <View className="flex-row items-center justify-between px-6 mb-4">
                     <Text className="text-xl font-bold text-black" numberOfLines={1}>
-                      {t('app.most_popular')}
+                      {t('app.most_popular') === 'app.most_popular' ? 'Most Popular' : t('app.most_popular')}
                     </Text>
                     <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu' })}>
                       <Text className="text-sm text-orange-600 font-bold" numberOfLines={1}>{t('app.see_all')}</Text>
@@ -374,7 +374,7 @@ export default function HomeScreen() {
                 <View className="mb-6 mt-4">
                   <View className="flex-row items-center justify-between px-6 mb-4">
                     <Text className="text-xl font-bold text-black" numberOfLines={1}>
-                      {t('app.discover_delicious_pizzas')}
+                      {t('app.discover_delicious_pizzas') === 'app.discover_delicious_pizzas' ? 'Discover Delicious Pizzas' : t('app.discover_delicious_pizzas')}
                     </Text>
                     {(() => {
                       // Find pizza category _id from categories
@@ -403,7 +403,7 @@ export default function HomeScreen() {
                 <View className="mb-6 mt-4">
                   <View className="flex-row items-center justify-between px-6 mb-4">
                     <Text className="text-xl font-bold text-black" numberOfLines={1}>
-                      {t('app.discover_wide_range_burgers')}
+                      {t('app.discover_wide_range_burgers') === 'app.discover_wide_range_burgers' ? 'Discover Wide Range Burgers' : t('app.discover_wide_range_burgers')}
                     </Text>
                     {(() => {
                       // Find burger category _id from categories

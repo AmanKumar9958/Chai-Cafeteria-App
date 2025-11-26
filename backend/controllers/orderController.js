@@ -76,7 +76,7 @@ exports.createOrder = async (req, res) => {
     const couponCode = body.couponCode ? String(body.couponCode).toUpperCase() : null;
 
     const subtotal = items.reduce((s, it) => s + (Number(it.price) * Number(it.qty)), 0);
-    let deliveryFee = orderType === 'Delivery' ? 20 : 0;
+    let deliveryFee = 0; // Delivery fee removed
     let discount = 0;
 
     if (couponCode) {
@@ -92,9 +92,7 @@ exports.createOrder = async (req, res) => {
             if (subtotal >= (Number(coupon.minSubtotal) || 0)) {
               discount = Number(coupon.value) || 0;
             }
-          } else if (coupon.type === 'freeship') {
-            deliveryFee = 0;
-          }
+          } // 'freeship' type is now ignored since deliveryFee is always 0
         }
       }
     }

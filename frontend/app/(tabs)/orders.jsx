@@ -132,8 +132,12 @@ export default function OrdersScreen() {
               contentFit="contain"
               cachePolicy="memory-disk"
             />
-            <Text className="text-lg font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{t('app.no_orders_yet')}</Text>
-            <Text className="text-sm text-chai-text-secondary text-center mb-4">{t('app.no_orders_yet_description')}</Text>
+              <Text className="text-lg font-semibold text-chai-text-primary mb-1" numberOfLines={1}>
+                {t('app.no_orders_yet') === 'app.no_orders_yet' ? 'No orders yet' : t('app.no_orders_yet')}
+              </Text>
+              <Text className="text-sm text-chai-text-secondary text-center mb-4">
+                {t('app.no_orders_yet_description') === 'app.no_orders_yet_description' ? 'You haven\'t placed any orders yet.' : t('app.no_orders_yet_description')}
+              </Text>
             <Pressable onPress={() => router.push('/(tabs)/menu')} className="bg-chai-primary px-5 py-3 rounded-full">
               <Text className="text-white font-semibold">{t('app.browse_menu')}</Text>
             </Pressable>

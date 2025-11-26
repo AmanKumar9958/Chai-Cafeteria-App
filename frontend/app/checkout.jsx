@@ -76,7 +76,7 @@ export default function CheckoutScreen() {
 
   const totals = useMemo(() => {
     const subtotal = items.reduce((s, it) => s + (Number(it.price) * (it.qty || 0)), 0);
-    let delivery = type === 'Delivery' ? 20 : 0; // example
+    let delivery = 0; // Delivery charge removed
     let discount = appliedCoupon?.discount || 0;
     if (appliedCoupon?.freeDelivery) delivery = 0;
     const total = Math.max(0, subtotal + delivery - discount);
@@ -305,6 +305,7 @@ export default function CheckoutScreen() {
       </View>
     );
   });
+  QtyControl.displayName = "QtyControl";
 
   // Refs for auto-advancing between fields
   const nameRef = useRef(null);
@@ -349,7 +350,7 @@ export default function CheckoutScreen() {
           <View className="mt-3">
             <View className="flex-row justify-between mb-1"><Text className="text-chai-text-secondary">Subtotal</Text><Text className="text-chai-text-primary">₹{totals.subtotal.toFixed(2)}</Text></View>
             {type === 'Delivery' && (
-              <View className="flex-row justify-between mb-1"><Text className="text-chai-text-secondary">Delivery</Text><Text className="text-chai-text-primary">₹{totals.delivery.toFixed(2)}</Text></View>
+              <View className="flex-row justify-between mb-1"><Text className="text-chai-text-secondary">Delivery</Text><Text className="text-chai-text-primary">₹0.00</Text></View>
             )}
             {appliedCoupon && appliedCoupon.type !== 'freeship' && totals.discount > 0 && (
               <View className="flex-row justify-between mb-1"><Text className="text-chai-text-secondary">Discount ({appliedCoupon.code})</Text><Text className="text-chai-success">-₹{totals.discount.toFixed(2)}</Text></View>
