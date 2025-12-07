@@ -204,7 +204,7 @@ export default function OrdersScreen() {
                 </Text>
               ))}
             </View>
-            {(item.couponCode || item.discount) && (
+            {(!!item.couponCode || Number(item.discount || 0) > 0) && (
               <View className="mt-2 flex-row justify-between">
                 <Text className="text-sm text-chai-text-secondary">Coupon {item.couponCode ? `(${item.couponCode})` : ''}</Text>
                 {Number(item.discount || 0) > 0 && (

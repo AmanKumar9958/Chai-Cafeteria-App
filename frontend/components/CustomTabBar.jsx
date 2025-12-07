@@ -30,7 +30,9 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
   const insets = useSafeAreaInsets();
   
   // 3. Layout Fix: Push bar up above the Home Indicator (black line)
-  const bottomMargin = Platform.OS === 'ios' ? Math.max(insets.bottom, 20) : 20;
+  const bottomMargin = Platform.OS === 'ios' 
+    ? Math.max(insets.bottom, 20) 
+    : 20 + insets.bottom;
 
   // Animated Shared Value
   const indicatorX = useSharedValue(0);
