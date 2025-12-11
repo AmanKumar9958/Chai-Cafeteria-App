@@ -72,6 +72,11 @@ exports.createOrder = async (req, res) => {
     const address2 = body.address?.address2 || body.address2 || '';
     const landmark = body.address?.landmark || body.landmark || '';
     const pincode = body.address?.pincode || body.pincode || '';
+    
+    if (orderType === 'Delivery' && pincode !== '834003') {
+      return res.status(400).json({ msg: 'Delivery is only available for pincode 834003' });
+    }
+
     const notes = body.note || body.notes || '';
     const couponCode = body.couponCode ? String(body.couponCode).toUpperCase() : null;
 

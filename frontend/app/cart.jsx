@@ -28,17 +28,8 @@ export default function CartScreen() {
           onPress={() => {
             const current = item.qty || 0;
             if (current <= 1) {
-              Alert.alert('Remove item', `Remove ${item.name} from cart?`, [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Remove',
-                  style: 'destructive',
-                  onPress: () => {
-                    removeItem(item._id);
-                    Toast.show({ type: 'bannerSuccess', text1: 'Removed from cart' });
-                  }
-                }
-              ]);
+              removeItem(item._id);
+              Toast.show({ type: 'bannerSuccess', text1: 'Removed from cart' });
               return;
             }
             // Fast decrement without toast for smoother UX
@@ -60,10 +51,8 @@ export default function CartScreen() {
         </AnimatedPressable>
 
         <AnimatedPressable onPress={() => {
-          Alert.alert('Remove item', `Remove ${item.name} from cart?`, [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Remove', style: 'destructive', onPress: () => { removeItem(item._id); Toast.show({ type: 'bannerSuccess', text1: 'Removed from cart' }); } }
-          ]);
+          removeItem(item._id);
+          Toast.show({ type: 'bannerSuccess', text1: 'Removed from cart' });
         }} className="ml-3 p-2" scaleTo={0.9} haptic="impactLight">
           <Feather name="x" size={18} color="#e11d48" />
         </AnimatedPressable>

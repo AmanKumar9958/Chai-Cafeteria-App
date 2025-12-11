@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, TextInput, ScrollView, Animated, Easing, Modal, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -64,6 +64,7 @@ export default function CheckoutScreen() {
   const [address2, setAddress2] = useState('');
   const [landmark, setLandmark] = useState('');
   const [pincode, setPincode] = useState('');
+  const [showPincodeError, setShowPincodeError] = useState(false);
   const [payment, setPayment] = useState('COD'); // 'Online Payment' | 'COD'
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -89,7 +90,7 @@ export default function CheckoutScreen() {
     if (!/^[0-9]{10}$/.test(phone)) return false;
     if (type === 'Delivery') {
       if (!address1.trim()) return false;
-      if (!/^[0-9]{4,6}$/.test(pincode)) return false;
+      if (pincode !== '834003') return false;
     }
     return true;
   }, [items.length, name, phone, type, address1, pincode]);
@@ -500,7 +501,12 @@ export default function CheckoutScreen() {
             <TextInput
               ref={pincodeRef}
               value={pincode}
-              onChangeText={(t) => { setPincode(t); if (t?.length === 6) { /* move focus to button area, no next input */ } }}
+              onChangeText={(t) => {
+                setPincode(t);
+                if (t.length === 6 && t !== '834003') {
+                  setShowPincodeError(true);
+                }
+              }}
               keyboardType="number-pad"
               maxLength={6}
               placeholderTextColor="#757575"
@@ -550,6 +556,34 @@ export default function CheckoutScreen() {
           <Text className="text-white font-semibold">{paying ? 'Processing payment…' : (submitting ? 'Placing order...' : `Place order • ₹${totals.total.toFixed(2)}`)}</Text>
         </AnimatedPressable>
       </View>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showPincodeError}
+        onRequestClose={() => setShowPincodeError(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-4">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-sm items-center shadow-xl">
+            <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
+              <Text className="text-3xl">📍</Text>
+            </View>
+            <Text className="text-xl font-bold text-chai-text-primary mb-2 text-center">Service Unavailable</Text>
+            <Text className="text-chai-text-secondary text-center mb-6">
+              This is only for this pincode <Text className="font-bold text-chai-primary">834003</Text>
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setShowPincodeError(false);
+                setPincode('');
+              }}
+              className="bg-chai-primary py-3 px-8 rounded-xl w-full"
+            >
+              <Text className="text-white font-semibold text-center">Okay</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       
     </SafeAreaView>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, Dimensions, Platform, Text } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import AnimatedPressable from './AnimatedPressable'; // Ensure this file exists in your project
 import { Feather } from '@expo/vector-icons';
@@ -101,6 +101,9 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                   size={24}
                   color={isFocused ? ACTIVE_COLOR : INACTIVE_COLOR}
                 />
+                <Text style={[styles.label, { color: isFocused ? ACTIVE_COLOR : INACTIVE_COLOR }]}>
+                  {tabIdx !== -1 ? TAB_ICONS[tabIdx].label : label}
+                </Text>
               </AnimatedPressable>
             </View>
           );
@@ -152,6 +155,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: INDICATOR_HEIGHT,
     backgroundColor: ACTIVE_COLOR,
     zIndex: 10,
+  },
+  label: {
+    fontSize: 10,
+    marginTop: 2,
+    fontWeight: '500',
   },
 });
 
