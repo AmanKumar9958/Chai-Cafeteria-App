@@ -164,7 +164,8 @@ export default function HomeScreen() {
             style={{ width: '100%', height: '100%', borderRadius: 100, padding: 6 }} // Slightly smaller to show inside border
             contentFit="cover"
             cachePolicy="memory-disk"
-            transition={200}
+            transition={0}
+            priority="high"
             onLoadEnd={() => setLoaded(true)}
           />
         </View>
@@ -207,7 +208,8 @@ export default function HomeScreen() {
             style={{ width: '100%', height: '100%' }}
             contentFit="cover" // 'cover' fills the area like the screenshot
             cachePolicy="memory-disk"
-            transition={200}
+            transition={0}
+            priority="high"
             onLoadEnd={() => setLoaded(true)}
           />
         </View>
@@ -248,7 +250,7 @@ export default function HomeScreen() {
   }, [slideAnim, fadeAnim]);
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FFFBF7] pt-5 mt-1">
+    <SafeAreaView className="flex-1 bg-[#FFFBF7] pt-5 mt-1" style={{ paddingBottom: bottomPadding + 40 }}>
       <StatusBar style="dark" />
       {isLoading ? (
         <>

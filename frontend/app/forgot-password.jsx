@@ -1,6 +1,7 @@
 // frontend/app/forgot-password.jsx
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Animated, Easing } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
@@ -49,7 +50,7 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <Animated.ScrollView style={{ flex: 1, opacity: fadeAnim, transform: [{ translateX: slideAnim }] }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 32 }} keyboardShouldPersistTaps="handled">
           <View className="items-center mb-6">
-            <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
+            <ExpoImage source={require('../assets/images/android-icon-background.png')} style={{ width: 220, height: 96 }} contentFit="contain" />
             <Text numberOfLines={1} ellipsizeMode="tail" className="text-3xl font-bold mt-4 text-chai-text-primary">{t('app.reset_password')}</Text>
             <Text numberOfLines={1} ellipsizeMode="tail" className="text-chai-text-secondary mt-2 font-semibold">{t('app.enter_email_otp')}</Text>
           </View>

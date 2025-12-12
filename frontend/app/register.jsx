@@ -1,6 +1,7 @@
 // frontend/app/register.jsx
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, ActivityIndicator, Image, Platform, KeyboardAvoidingView, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, ScrollView, Animated, Easing } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import AnimatedPressable from '../components/AnimatedPressable';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { Feather } from '@expo/vector-icons';
@@ -80,7 +81,7 @@ export default function RegisterScreen() {
                     style={{ transform: [{ translateX: slideAnim }], opacity: fadeAnim }}
                 >
                     <View className="items-center mb-6">
-                        <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
+                        <ExpoImage source={require('../assets/images/android-icon-background.png')} style={{ width: 220, height: 96 }} contentFit="contain" />
                         <Text className="text-3xl font-bold mt-4 text-chai-text-primary py-1" numberOfLines={1} ellipsizeMode="tail">{t('app.welcome')}</Text>
                         <Text className="text-chai-text-secondary mt-2 font-semibold" numberOfLines={1} ellipsizeMode="tail">{t('app.create_account')}</Text>
                     </View>

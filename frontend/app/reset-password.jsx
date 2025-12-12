@@ -1,6 +1,7 @@
 // frontend/app/reset-password.jsx
 import React, { useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
@@ -43,7 +44,7 @@ export default function ResetPasswordScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 32 }} keyboardShouldPersistTaps="handled">
           <View className="items-center mb-6">
-            <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
+            <ExpoImage source={require('../assets/images/android-icon-background.png')} style={{ width: 220, height: 96 }} contentFit="contain" />
             <Text className="text-3xl font-bold mt-4 text-chai-text-primary">{t('app.enter_otp')}</Text>
             <Text className="text-chai-text-secondary mt-2 font-semibold">{t('app.new_password')}</Text>
           </View>

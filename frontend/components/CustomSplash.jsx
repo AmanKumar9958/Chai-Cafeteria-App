@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Image, Animated, Dimensions } from 'react-native';
+import { View, Animated, Dimensions } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -34,9 +35,10 @@ export default function CustomSplash({ visible = true, ready = false, onDone }) 
 
   return (
     <View style={{ position: 'absolute', inset: 0, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' }}>
-      <Image
+      <ExpoImage
         source={require('../assets/images/android-icon-foreground.png')}
-        style={{ width: SCREEN_WIDTH * 0.45, height: SCREEN_WIDTH * 0.45, resizeMode: 'contain' }}
+        style={{ width: SCREEN_WIDTH * 0.45, height: SCREEN_WIDTH * 0.45 }}
+        contentFit="contain"
       />
       {/* Progress bar at bottom */}
       <View style={{ position: 'absolute', bottom: SCREEN_HEIGHT * 0.08, width: SCREEN_WIDTH * 0.6, height: 8, borderRadius: 9999, backgroundColor: '#EDE7E1', overflow: 'hidden' }}>

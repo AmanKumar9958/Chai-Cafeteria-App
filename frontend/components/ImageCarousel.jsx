@@ -64,6 +64,7 @@ const ImageCarouselBase = ({
               contentFit="cover"
               cachePolicy="memory-disk"
               transition={0}
+              priority="high"
             />
           </Pressable>
         ))}

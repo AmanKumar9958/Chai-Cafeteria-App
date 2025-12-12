@@ -1,6 +1,7 @@
 // frontend/app/login.jsx
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, ActivityIndicator, Image, Animated, Easing } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, Animated, Easing } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import AnimatedPressable from '../components/AnimatedPressable';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { Feather } from '@expo/vector-icons';
@@ -56,7 +57,7 @@ export default function LoginScreen() {
         style={{ transform: [{ translateX: slideAnim }], opacity: fadeAnim }}
       >
         <View className="items-center mb-10">
-          <Image source={require('../assets/images/android-icon-background.png')} className="w-[220px] h-24" />
+          <ExpoImage source={require('../assets/images/android-icon-background.png')} style={{ width: 220, height: 96 }} contentFit="contain" />
           <Text className="text-3xl font-bold mt-4 text-chai-text-primary py-1">{t('app.welcome_back')}</Text>
           <Text className="text-chai-text-secondary mt-2 font-semibold">{t('app.login_to_account')}</Text>
         </View>

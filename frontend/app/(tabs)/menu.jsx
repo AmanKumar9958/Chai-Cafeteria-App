@@ -164,7 +164,7 @@ export default function MenuScreen() {
         <View className="bg-white rounded-2xl shadow-md overflow-hidden">
           <View style={{ width: '100%', height: 128 }}>
             {!loaded && <View className="absolute inset-0"><Skeleton width="100%" height={128} borderRadius={16} /></View>}
-            <ExpoImage source={src} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={0} onLoadEnd={() => setLoaded(true)} />
+            <ExpoImage source={src} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={0} priority="high" onLoadEnd={() => setLoaded(true)} />
           </View>
           <View className="p-3">
             <Text className="text-base font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{item.name}</Text>
@@ -196,7 +196,7 @@ export default function MenuScreen() {
   const renderItemCard = ({ item }) => <ItemCard item={item} />;
 
   return (
-    <SafeAreaView className="flex-1 bg-chai-bg pt-5 mt-1">
+    <SafeAreaView className="flex-1 bg-chai-bg pt-5 mt-1" style={{ paddingBottom: bottomPadding }}>
       <View className="px-4 mb-2">
         <View className="flex-row items-center bg-white rounded-full px-4 py-3 shadow-sm border border-chai-divider">
           <Feather name="search" size={20} color="#9CA3AF" className="mr-3" />
