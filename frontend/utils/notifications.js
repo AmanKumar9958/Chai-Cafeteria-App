@@ -106,8 +106,17 @@ export async function scheduleRegularNotifications(times = [
   try {
     const granted = await ensureNotificationPermission();
     if (!granted) return false;
-    // Prevent duplicates on re-run by clearing all scheduled
+
+    // Check if already scheduled to avoid unnecessary cancellation/rescheduling
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    const dailyNotifications = scheduled.filter(n => n.content.data?.type === 'daily_reminder');
+
+    if (dailyNotifications.length === times.length) {
+      // Assume already set up correctly
+      return true;
+    }
+
+    // Clear existing to reset
     if (scheduled?.length) {
       await Notifications.cancelAllScheduledNotificationsAsync();
     }
@@ -118,6 +127,7 @@ export async function scheduleRegularNotifications(times = [
           title: 'Chai Cafeteria',
           body: 'Take a chai break ☕️ Check today’s specials and offers!',
           sound: 'default',
+          data: { type: 'daily_reminder' },
         },
         trigger: {
           hour: t.hour,

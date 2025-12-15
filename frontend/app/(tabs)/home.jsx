@@ -23,6 +23,7 @@ import AnimatedPressable from '../../components/AnimatedPressable';
 import { ImageCarousel } from '../../components/ImageCarousel';
 import Skeleton from '../../components/Skeleton';
 import Toast from 'react-native-toast-message';
+import { useTabBarScroll } from '../../context/TabBarContext';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
 const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api';
@@ -58,6 +59,7 @@ const COLORS = {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const onScroll = useTabBarScroll();
   const { user: authUser } = useAuth();
   const { t } = useTranslation();
   const { items: cartItems = [], addItem } = useCart() || {};
@@ -310,6 +312,8 @@ export default function HomeScreen() {
 
           <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }], opacity: fadeAnim }}>
             <Animated.ScrollView 
+              onScroll={onScroll}
+              scrollEventThrottle={16}
               contentContainerStyle={{ paddingBottom: 120 + bottomPadding }}
               showsVerticalScrollIndicator={false}
             >

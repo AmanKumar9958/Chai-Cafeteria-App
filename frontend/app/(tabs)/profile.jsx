@@ -11,12 +11,15 @@ import { useTranslation } from 'react-i18next';
 import { setLanguage } from '../../i18n';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { scheduleOneOffNotification } from '../../utils/notifications';
+import { useTabBarScroll } from '../../context/TabBarContext';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const onScroll = useTabBarScroll();
   const bottomPadding = Platform.OS === 'ios' ? Math.max(88, insets.bottom + 88) : 24;
   const { logout, userToken, refreshProfile } = useAuth();
   const [user, setUser] = useState(null);
@@ -76,8 +79,15 @@ export default function ProfileScreen() {
   const display = user || { name: '', email: '-', phone: '-', address1: '-', address2: '-' };
 
   return (
-    <SafeAreaView className="flex-1 bg-chai-bg p-6" style={{ paddingBottom: bottomPadding }}>
+    <SafeAreaView className="flex-1 bg-chai-bg" style={{ paddingBottom: 0 }}>
       <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }], opacity: fadeAnim }}>
+      
+      <Animated.ScrollView 
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ padding: 24, paddingBottom: bottomPadding }}
+        showsVerticalScrollIndicator={false}
+      >
       <View className="items-center mt-2 mb-6">
         <View className="w-24 h-24 rounded-full bg-gray-100 items-center justify-center">
           <Text className="text-4xl font-bold text-chai-text-primary">{(display.name || 'U').charAt(0)}</Text>
@@ -176,9 +186,25 @@ export default function ProfileScreen() {
         </AnimatedPressable>
       )}
 
+      {/* Test Notification Button */}
+      {/* Test Notification Button */}
+      <AnimatedPressable 
+        onPress={async () => {
+          const ok = await scheduleOneOffNotification(5);
+          if (ok) Toast.show({ type: 'success', text1: 'Scheduled', text2: 'Wait 5 seconds...' });
+          else Toast.show({ type: 'error', text1: 'Error', text2: 'Check permissions' });
+        }} 
+        className="mt-4 bg-gray-500 rounded-xl p-4 items-center" 
+        scaleTo={0.95}
+      >
+        <Text className="text-white font-bold">Test Notification (5s)</Text>
+      </AnimatedPressable>
+
+      </Animated.ScrollView>
+
       {/* Language switcher */}
-      <View className="mt-1">
-        <LanguageSwitcher style={{ position: 'absolute', top: 0, left: 0, zIndex: 50 }} />
+      <View className="mt-1" style={{ position: 'absolute', top: 24, left: 24, zIndex: 50 }}>
+        <LanguageSwitcher />
       </View>
       </Animated.View>
     </SafeAreaView>

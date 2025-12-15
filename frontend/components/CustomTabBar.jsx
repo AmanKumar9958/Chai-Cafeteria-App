@@ -4,6 +4,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-na
 import AnimatedPressable from './AnimatedPressable'; // Ensure this file exists in your project
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTabBar } from '../context/TabBarContext';
 
 // 1. Updated to exactly 4 Tabs as requested
 const TAB_ICONS = [
@@ -28,6 +29,7 @@ const INDICATOR_HEIGHT = 4;
 
 const CustomTabBar = ({ state, descriptors, navigation }) => {
   const insets = useSafeAreaInsets();
+  const { tabBarTranslateY } = useTabBar();
   
   // 3. Layout Fix: Push bar up above the Home Indicator (black line)
   const bottomMargin = Platform.OS === 'ios' 
@@ -53,8 +55,12 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
     transform: [{ translateX: indicatorX.value }],
   }));
 
+  const containerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: tabBarTranslateY.value }],
+  }));
+
   return (
-    <View style={[styles.container, { bottom: bottomMargin }]}>
+    <Animated.View style={[styles.container, { bottom: bottomMargin }, containerStyle]}>
       <View style={styles.bar}>
         
         {/* The Sliding Indicator */}
@@ -109,7 +115,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
           );
         })}
       </View>
-    </View>
+    </Animated.View>
   );
 };
 

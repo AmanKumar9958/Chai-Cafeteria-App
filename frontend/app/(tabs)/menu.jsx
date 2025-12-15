@@ -10,6 +10,7 @@ import { Image as ExpoImage } from 'expo-image';
 import Skeleton from '../../components/Skeleton';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import { useTranslation } from 'react-i18next';
+import { useTabBarScroll } from '../../context/TabBarContext';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
 const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api';
@@ -17,6 +18,7 @@ const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.repla
 export default function MenuScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const onScroll = useTabBarScroll();
   // Space for floating checkout bar so list items are not covered
   const checkoutBarHeight = 64;
   const bottomPadding = insets.bottom + checkoutBarHeight + 32; // extra breathing room
@@ -218,6 +220,8 @@ export default function MenuScreen() {
         </View>
       </View>
       <FlatList
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={selected === 'all' ? items.slice(0, visibleCount) : items}
         renderItem={renderItemCard}
         keyExtractor={(item) => item._id}

@@ -11,12 +11,14 @@ import Toast from 'react-native-toast-message';
 import { router } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 import { useTranslation } from 'react-i18next';
+import { useTabBarScroll } from '../../context/TabBarContext';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
 
 export default function OrdersScreen() {
   const { t } = useTranslation();
+  const onScroll = useTabBarScroll();
   const { userToken, user } = useAuth();
   const { addItemsBatch } = useCart() || {};
   const [loading, setLoading] = useState(true);
@@ -158,6 +160,8 @@ export default function OrdersScreen() {
       </View>
       <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }], opacity: fadeAnim }}>
       <FlatList
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={orders}
         keyExtractor={o => o._id || String(o.id)}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
