@@ -8,7 +8,8 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CartProvider } from '../context/CartContext';
 import * as SplashScreen from 'expo-splash-screen';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
-import { registerForPushNotificationsAsync, sendPushTokenToBackend, scheduleRegularNotifications, subscribeForegroundNotification, subscribeNotificationResponse, scheduleOneOffNotification, ensureNotificationPermission } from '../utils/notifications';
+import { scheduleRegularNotifications, subscribeForegroundNotification, subscribeNotificationResponse, scheduleOneOffNotification, ensureNotificationPermission } from '../utils/notifications';
+import { registerForPushNotificationsAsync } from '../utils/pushNotifications';
 import CustomSplash from '../components/CustomSplash';
 
 SplashScreen.preventAutoHideAsync();
@@ -29,12 +30,16 @@ function MainLayout() {
     let unsubscribeResponse = null;
     const initNotifications = async () => {
       if (!userToken) return;
-      // Ensure permission for local notifications (Android 13+ and iOS)
-      await ensureNotificationPermission();
-      // Remote push registration can be disabled via env (EXPO_PUBLIC_ENABLE_REMOTE_PUSH=false)
-      const expoPushToken = await registerForPushNotificationsAsync();
-      if (expoPushToken) await sendPushTokenToBackend(expoPushToken, userToken);
-      await scheduleRegularNotifications(); // 2x per day default
+      
+      // Use the new registration logic from utils/pushNotifications.js
+      const RAW_API = process.env.EXPO_PUBLIC_API_URL;
+      const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : null;
+      
+      if (API_URL) {
+        await registerForPushNotificationsAsync(API_URL, userToken);
+      }
+
+      // await scheduleRegularNotifications(); // Removed to avoid duplicate/annoying local notifications
       // Optional quick test: schedule one-off in 10s when EXPO_PUBLIC_NOTIFICATIONS_DEBUG=true
       if (process.env.EXPO_PUBLIC_NOTIFICATIONS_DEBUG === 'true') {
         try { await scheduleOneOffNotification(10); } catch {}

@@ -11,6 +11,7 @@ const UserSchema = new mongoose.Schema(
         address2: { type: String },
         otp: { type: String },
         isVerified: { type: Boolean, default: false },
+        pushToken: { type: String, default: null },
     },
     { timestamps: true }
 );
