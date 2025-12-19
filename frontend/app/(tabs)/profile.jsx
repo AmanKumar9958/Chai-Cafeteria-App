@@ -188,7 +188,7 @@ export default function ProfileScreen() {
 
       {/* Test Notification Button */}
       {/* Test Notification Button */}
-      <AnimatedPressable 
+      {/* <AnimatedPressable 
         onPress={async () => {
           const ok = await scheduleOneOffNotification(5);
           if (ok) Toast.show({ type: 'success', text1: 'Scheduled', text2: 'Wait 5 seconds...' });
@@ -198,7 +198,7 @@ export default function ProfileScreen() {
         scaleTo={0.95}
       >
         <Text className="text-white font-bold">Test Notification (5s)</Text>
-      </AnimatedPressable>
+      </AnimatedPressable> */}
 
       </Animated.ScrollView>
 
