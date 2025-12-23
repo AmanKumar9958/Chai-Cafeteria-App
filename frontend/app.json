@@ -17,7 +17,7 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "newArchEnabled": true,
-      "versionCode": 1,
+      "versionCode": 10,
       "package": "com.chaicafeteriaranchi.frontend",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION"
