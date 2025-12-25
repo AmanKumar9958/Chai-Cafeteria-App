@@ -1,6 +1,7 @@
 // backend/models/User.js
 const mongoose = require('mongoose');
 
+
 const UserSchema = new mongoose.Schema(
     {
         name: { type: String, required: true },
@@ -12,8 +13,39 @@ const UserSchema = new mongoose.Schema(
         otp: { type: String },
         isVerified: { type: Boolean, default: false },
         pushToken: { type: String, default: null },
+        // GeoJSON location: { type: 'Point', coordinates: [longitude, latitude] }
+        location: {
+            type: {
+                type: String,
+                enum: ['Point'],
+                default: 'Point',
+                required: false,
+            },
+            coordinates: {
+                type: [Number], // [longitude, latitude]
+                required: false,
+            },
+        },
     },
     { timestamps: true }
 );
+
+// 2dsphere index for geospatial queries
+UserSchema.index({ location: '2dsphere' });
+
+// Static method to find users within 10km of a point
+UserSchema.statics.findUsersNearby = function(restaurantLat, restaurantLong) {
+    return this.find({
+        location: {
+            $near: {
+                $geometry: {
+                    type: 'Point',
+                    coordinates: [restaurantLong, restaurantLat],
+                },
+                $maxDistance: 10000, // 10km in meters
+            },
+        },
+    });
+};
 
 module.exports = mongoose.model('User', UserSchema);

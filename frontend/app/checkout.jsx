@@ -1,4 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { Alert } from 'react-native';
+import { checkDeliveryAvailability } from '../utils/checkDeliveryAvailability';
 import { View, Text, TextInput, ScrollView, Animated, Easing, Modal, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '../context/CartContext';
@@ -69,7 +71,10 @@ export default function CheckoutScreen() {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [paying, setPaying] = useState(false);
-  // Distance/location feature removed: no checks, no restrictions based on distance
+  // Location-based delivery check
+  const [locationChecked, setLocationChecked] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationDistance, setLocationDistance] = useState(null);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, type, value, discount, freeDelivery }
   const [couponMessage, setCouponMessage] = useState('');
@@ -91,9 +96,24 @@ export default function CheckoutScreen() {
     if (type === 'Delivery') {
       if (!address1.trim()) return false;
       if (pincode !== '834003') return false;
+      if (!locationChecked) return false;
     }
     return true;
-  }, [items.length, name, phone, type, address1, pincode]);
+  }, [items.length, name, phone, type, address1, pincode, locationChecked]);
+  // Handler for checking delivery availability
+  const handleCheckDelivery = async () => {
+    setLocationLoading(true);
+    const backendUrl = `${API_URL}/orders/validate-location`;
+    const result = await checkDeliveryAvailability(backendUrl, setLocationLoading);
+    if (result.allowed) {
+      setLocationChecked(true);
+      setLocationDistance(result.distance);
+      Alert.alert('Delivery Available', `You are within ${result.distance} km of the restaurant.`);
+    } else {
+      setLocationChecked(false);
+      setLocationDistance(result.distance || null);
+    }
+  };
 
   // All delivery eligibility and distance checking code has been removed.
 
@@ -461,7 +481,7 @@ export default function CheckoutScreen() {
           )}
         </View>
 
-        {/* Delivery Address */}
+        {/* Delivery Address & Location Check */}
         {type === 'Delivery' && (
           <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
             <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Delivery Address</Text>
@@ -514,6 +534,18 @@ export default function CheckoutScreen() {
               className="bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary"
               returnKeyType="done"
             />
+            {/* Location check button */}
+            <AnimatedPressable
+              onPress={handleCheckDelivery}
+              disabled={locationLoading || locationChecked}
+              className={`mt-4 py-3 rounded-xl items-center ${locationChecked ? 'bg-green-500' : 'bg-chai-primary'} ${locationLoading ? 'opacity-60' : ''}`}
+              scaleTo={0.97}
+              haptic="impactMedium"
+            >
+              <Text className="text-white font-semibold">
+                {locationLoading ? 'Checking location…' : (locationChecked ? `Delivery Available${locationDistance ? ` (${locationDistance} km)` : ''}` : 'Check Delivery Availability')}
+              </Text>
+            </AnimatedPressable>
           </View>
         )}
 

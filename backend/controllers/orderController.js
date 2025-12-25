@@ -1,3 +1,31 @@
+const { calculateDistance } = require('../utils/locationUtils');
+
+// POST /api/orders/validate-location
+// Validates if user is within delivery radius (10km) of the restaurant
+exports.validateLocation = (req, res) => {
+  const { userLatitude, userLongitude } = req.body || {};
+  // Hardcoded restaurant location (Delhi)
+  const restaurantLat = 28.6139;
+  const restaurantLon = 77.2090;
+  if (
+    typeof userLatitude !== 'number' ||
+    typeof userLongitude !== 'number' ||
+    isNaN(userLatitude) ||
+    isNaN(userLongitude)
+  ) {
+    return res.status(400).json({ allowed: false, message: 'Invalid coordinates' });
+  }
+  const distance = calculateDistance(userLatitude, userLongitude, restaurantLat, restaurantLon);
+  if (distance <= 10) {
+    return res.status(200).json({ allowed: true, distance: Number(distance.toFixed(3)) });
+  } else {
+    return res.status(400).json({
+      allowed: false,
+      message: 'Delivery not available at your location',
+      distance: Number(distance.toFixed(3)),
+    });
+  }
+};
 const Order = require('../models/Order');
 const Coupon = require('../models/Coupon');
 const { Types } = require('mongoose');

@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { getOrders, updateOrderStatus, createOrder } = require('../controllers/orderController');
+const { getOrders, updateOrderStatus, createOrder, validateLocation } = require('../controllers/orderController');
+// Location validation endpoint (no auth required)
+router.post('/validate-location', validateLocation);
 const auth = require('../middleware/auth');
 
 // All order routes require an authenticated user
