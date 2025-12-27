@@ -7,7 +7,8 @@ import {
   Platform,
   Animated,
   Pressable,
-  Easing
+  Easing,
+  ScrollView // Added ScrollView explicitly for the filter chips
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,6 +49,8 @@ const sliderImages = [
   { _id: '3', imageURL: 'https://admin.chaicafeteria.com/images/category-cookies.png' },
 ];
 
+const PRICE_FILTERS = [80, 100, 150, 200];
+
 // Specific colors from your screenshots
 const COLORS = {
   orange: '#EA580C', // Deep Orange
@@ -68,10 +71,13 @@ export default function HomeScreen() {
   const [greetingKey, setGreetingKey] = useState(getGreetingKey());
   const [categories, setCategories] = useState([]);
   const [popularItems, setPopularItems] = useState([]);
-  const [pizzaItems, setPizzaItems] = useState([]); // New section
-  const [burgerItems, setBurgerItems] = useState([]); // New section
+  const [pizzaItems, setPizzaItems] = useState([]); 
+  const [burgerItems, setBurgerItems] = useState([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
+  
+  // New State for Price Filter
+  const [activePriceFilter, setActivePriceFilter] = useState(null);
 
   const sliderWidth = Dimensions.get('window').width - 48;
   const bottomPadding = Platform.OS === 'ios' ? Math.max(88, insets.bottom + 88) : 24;
@@ -142,7 +148,13 @@ export default function HomeScreen() {
 
   const totalCartQuantity = cartItems.reduce((sum, item) => sum + (item.qty || 0), 0);
 
-  // --- Fixed Category Card (Matches the outline style) ---
+  // Helper to filter items based on active price
+  const getFilteredItems = (items) => {
+    if (!activePriceFilter) return items;
+    return items.filter(item => (item.price || 0) <= activePriceFilter);
+  };
+
+  // --- Fixed Category Card ---
   const CategoryCardBase = ({ item }) => {
     const [loaded, setLoaded] = useState(false);
     const src = (() => {
@@ -154,7 +166,6 @@ export default function HomeScreen() {
         onPress={() => router.push({ pathname: '/(tabs)/menu', params: { categoryId: item._id } })}
         className="mr-5 items-center"
       >
-        {/* Simple black border circle, black background with padding */}
         <View className="w-20 h-20 rounded-full bg-black mb-2 overflow-hidden border border-black items-center justify-center p-1.5">
           {!loaded && (
             <View className="absolute inset-0">
@@ -163,7 +174,7 @@ export default function HomeScreen() {
           )}
           <ExpoImage
             source={src}
-            style={{ width: '100%', height: '100%', borderRadius: 100, padding: 6 }} // Slightly smaller to show inside border
+            style={{ width: '100%', height: '100%', borderRadius: 100, padding: 6 }} 
             contentFit="cover"
             cachePolicy="memory-disk"
             transition={0}
@@ -179,7 +190,7 @@ export default function HomeScreen() {
   };
   const CategoryCard = memo(CategoryCardBase);
 
-  // --- Fixed Popular Card (Matches the Pizza Screenshot 1:1) ---
+  // --- Fixed Popular Card ---
   const PopularItemCardBase = ({ item }) => {
     const [loaded, setLoaded] = useState(false);
     const src = (() => {
@@ -195,10 +206,8 @@ export default function HomeScreen() {
     return (
       <Pressable
         onPress={() => router.push({ pathname: '/(tabs)/menu', params: { search: item.name } })}
-        // Dimensions matching portrait card, white bg, thin black border, rounded-3xl
         className="w-40 mr-4 bg-white border border-black rounded-3xl overflow-hidden" 
       >
-        {/* Image Area - White background to blend */}
         <View className="w-full h-36 bg-white items-center justify-center">
            {!loaded && (
             <View className="absolute inset-0">
@@ -208,7 +217,7 @@ export default function HomeScreen() {
           <ExpoImage
             source={src}
             style={{ width: '100%', height: '100%' }}
-            contentFit="cover" // 'cover' fills the area like the screenshot
+            contentFit="cover" 
             cachePolicy="memory-disk"
             transition={0}
             priority="high"
@@ -216,17 +225,14 @@ export default function HomeScreen() {
           />
         </View>
         
-        {/* Content Area */}
         <View className="p-2">
           <Text className="text-black font-bold text-base mb-2 leading-5" numberOfLines={1}>
             {item.name}
           </Text>
           
           <View className="flex-row justify-between items-center">
-            {/* Price in Orange */}
             <Text className="text-orange-600 font-extrabold text-lg">₹{item.price}</Text>
             
-            {/* Orange Circle Button */}
             <Pressable 
               onPress={handleAddToCart}
               className="bg-orange-600 w-8 h-8 rounded-full items-center justify-center"
@@ -250,6 +256,11 @@ export default function HomeScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true })
     ]).start();
   }, [slideAnim, fadeAnim]);
+
+  // Derived filtered data
+  const filteredPopular = getFilteredItems(popularItems);
+  const filteredPizzas = getFilteredItems(pizzaItems);
+  const filteredBurgers = getFilteredItems(burgerItems);
 
   return (
     <SafeAreaView className="flex-1 bg-[#FFFBF7] pt-5 mt-1" style={{ paddingBottom: bottomPadding + 40 }}>
@@ -332,7 +343,7 @@ export default function HomeScreen() {
               </View>
 
               {/* Categories Section */}
-              <View className="mb-8">
+              <View className="mb-6">
                 <View className="flex-row items-center justify-between px-6 mb-4">
                   {/* Styled Header */}
                   <Text className="text-xl font-bold text-black">
@@ -352,9 +363,47 @@ export default function HomeScreen() {
                 />
               </View>
 
+              {/* --- NEW PRICE FILTER SECTION --- */}
+              <View className="mb-8">
+                 <View className="flex-row items-center justify-between px-6 mb-3">
+                    <View className="flex-row items-center justify-between">
+                        <Text className="text-xl font-bold text-black mr-3">Filter by Price</Text>
+                        {activePriceFilter && (
+                            <Pressable 
+                                onPress={() => setActivePriceFilter(null)}
+                                className="bg-red-500 px-2 py-1 rounded-md"
+                            >
+                                <Text className="text-xs text-white font-semibold text-center" numberOfLines={1}>Clear</Text>
+                            </Pressable>
+                        )}
+                    </View>
+                 </View>
+                 <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    contentContainerStyle={{ paddingHorizontal: 24 }}
+                 >
+                    {PRICE_FILTERS.map((price) => {
+                        const isActive = activePriceFilter === price;
+                        return (
+                            <Pressable
+                                key={price}
+                                onPress={() => setActivePriceFilter(isActive ? null : price)}
+                                className={`mr-3 px-4 py-2 rounded-full border ${isActive ? 'bg-orange-600 border-orange-600' : 'bg-white border-black'}`}
+                            >
+                                <Text className={`font-bold ${isActive ? 'text-white' : 'text-black'}`}>
+                                    Under ₹{price}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                 </ScrollView>
+              </View>
+              {/* --- END PRICE FILTER SECTION --- */}
 
-              {/* Most Popular Section */}
-              {popularItems.length > 0 && (
+
+              {/* Most Popular Section (Filtered) */}
+              {filteredPopular.length > 0 ? (
                 <View className="mb-6">
                   <View className="flex-row items-center justify-between px-6 mb-4">
                     <Text className="text-xl font-bold text-black" numberOfLines={1}>
@@ -366,24 +415,25 @@ export default function HomeScreen() {
                   </View>
                   <FlatList
                     horizontal
-                    data={popularItems}
+                    data={filteredPopular}
                     renderItem={({ item }) => <PopularItemCard item={item} />}
                     keyExtractor={i => i._id}
                     contentContainerStyle={{ paddingHorizontal: 24 }}
                     showsHorizontalScrollIndicator={false}
                   />
                 </View>
-              )}
+              ) : activePriceFilter ? (
+                  <View className="px-6 mb-6"><Text className="text-gray-500 italic">No popular items under ₹{activePriceFilter}</Text></View>
+              ) : null}
 
-              {/* Discover Delicious Pizzas Section */}
-              {pizzaItems.length > 0 && (
+              {/* Discover Delicious Pizzas Section (Filtered) */}
+              {filteredPizzas.length > 0 && (
                 <View className="mb-6 mt-4">
                   <View className="flex-row items-center justify-between px-6 mb-4">
                     <Text className="text-xl font-bold text-black" numberOfLines={1}>
                       {t('app.discover_delicious_pizzas') === 'app.discover_delicious_pizzas' ? 'Discover Delicious Pizzas' : t('app.discover_delicious_pizzas')}
                     </Text>
                     {(() => {
-                      // Find pizza category _id from categories
                       const pizzaCat = categories.find(c => (c.name || '').toLowerCase().includes('pizza'));
                       const pizzaCatId = pizzaCat?._id || 'all';
                       return (
@@ -395,7 +445,7 @@ export default function HomeScreen() {
                   </View>
                   <FlatList
                     horizontal
-                    data={pizzaItems}
+                    data={filteredPizzas}
                     renderItem={({ item }) => <PopularItemCard item={item} />}
                     keyExtractor={i => i._id}
                     contentContainerStyle={{ paddingHorizontal: 24 }}
@@ -404,15 +454,14 @@ export default function HomeScreen() {
                 </View>
               )}
 
-              {/* Wide range of Burgers */}
-              {burgerItems.length > 0 && (
+              {/* Wide range of Burgers (Filtered) */}
+              {filteredBurgers.length > 0 && (
                 <View className="mb-6 mt-4">
                   <View className="flex-row items-center justify-between px-6 mb-4">
                     <Text className="text-xl font-bold text-black" numberOfLines={1}>
                       {t('app.discover_wide_range_burgers') === 'app.discover_wide_range_burgers' ? 'Discover Wide Range Burgers' : t('app.discover_wide_range_burgers')}
                     </Text>
                     {(() => {
-                      // Find burger category _id from categories
                       const burgerCat = categories.find(c => (c.name || '').toLowerCase().includes('burger'));
                       const burgerCatId = burgerCat?._id || 'all';
                       return (
@@ -424,7 +473,7 @@ export default function HomeScreen() {
                   </View>
                   <FlatList
                     horizontal
-                    data={burgerItems}
+                    data={filteredBurgers}
                     renderItem={({ item }) => <PopularItemCard item={item} />}
                     keyExtractor={i => i._id}
                     contentContainerStyle={{ paddingHorizontal: 24 }}
