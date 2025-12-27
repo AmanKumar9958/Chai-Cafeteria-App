@@ -17,6 +17,12 @@
     "production": {
       "autoIncrement": true,
       "resourceClass": "medium"
+    },
+    "build": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
