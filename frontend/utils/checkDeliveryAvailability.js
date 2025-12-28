@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import axios from 'axios';
-import { Alert } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 /**
  * Checks if delivery is available at the user's current location.
@@ -16,7 +16,12 @@ export async function checkDeliveryAvailability(backendUrl, setLoading) {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       if (setLoading) setLoading(false);
-      Alert.alert('Permission Denied', 'Location permission is required to check delivery availability.');
+      Toast.show({
+        type: 'error',
+        text1: 'Permission Denied',
+        text2: 'Location permission is required to check delivery availability.',
+        position: 'top',
+      });
       return { allowed: false, message: 'Permission denied' };
     }
 
@@ -35,13 +40,23 @@ export async function checkDeliveryAvailability(backendUrl, setLoading) {
       return { allowed: true, distance: response.data.distance };
     } else {
       if (setLoading) setLoading(false);
-      Alert.alert('Delivery Unavailable', response.data.message || 'We only deliver within 10km.');
+      Toast.show({
+        type: 'error',
+        text1: 'Delivery Unavailable',
+        text2: response.data.message || 'We only deliver within 12km.',
+        position: 'top',
+      });
       return { allowed: false, distance: response.data.distance, message: response.data.message };
     }
   } catch (err) {
     if (setLoading) setLoading(false);
     const msg = err?.response?.data?.message || err?.message || 'Could not check delivery availability.';
-    Alert.alert('Error', msg);
+    Toast.show({
+      type: 'error',
+      text1: 'Error',
+      text2: msg,
+      position: 'top',
+    });
     return { allowed: false, message: msg };
   }
 }

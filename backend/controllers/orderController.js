@@ -1,12 +1,13 @@
 const { calculateDistance } = require('../utils/locationUtils');
 
 // POST /api/orders/validate-location
-// Validates if user is within delivery radius (10km) of the restaurant
+// Validates if user is within delivery radius (from env) of the shop
 exports.validateLocation = (req, res) => {
   const { userLatitude, userLongitude } = req.body || {};
-  // Hardcoded restaurant location (Delhi)
-  const restaurantLat = 28.6139;
-  const restaurantLon = 77.2090;
+  // Read from environment variables, fallback to Ranchi if not set
+  const shopLat = parseFloat(process.env.EXPO_PUBLIC_CAFE_LAT) || 23.3441;
+  const shopLon = parseFloat(process.env.EXPO_PUBLIC_CAFE_LNG) || 85.3096;
+  const deliveryRadius = parseFloat(process.env.EXPO_PUBLIC_DELIVERY_RADIUS_KM) || 12;
   if (
     typeof userLatitude !== 'number' ||
     typeof userLongitude !== 'number' ||
@@ -15,8 +16,8 @@ exports.validateLocation = (req, res) => {
   ) {
     return res.status(400).json({ allowed: false, message: 'Invalid coordinates' });
   }
-  const distance = calculateDistance(userLatitude, userLongitude, restaurantLat, restaurantLon);
-  if (distance <= 10) {
+  const distance = calculateDistance(userLatitude, userLongitude, shopLat, shopLon);
+  if (distance <= deliveryRadius) {
     return res.status(200).json({ allowed: true, distance: Number(distance.toFixed(3)) });
   } else {
     return res.status(400).json({

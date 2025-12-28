@@ -553,14 +553,9 @@ export default function CheckoutScreen() {
         <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-chai-divider">
           <Text className="text-lg font-semibold mb-3 text-chai-text-primary">Payment Method</Text>
           <View className="flex-row bg-[#FFF3E9] rounded-xl p-1">
-            {['Online Payment', 'COD'].map(opt => {
-              // COD disabled only for Pickup per business rule
-              const codDisabled = (type === 'Pickup');
-              const disabled = (opt === 'COD') && codDisabled;
-              const hidden = false; // never hide COD for delivery
-              if (hidden) return null;
+            {(type === 'Pickup' ? ['Online Payment'] : ['Online Payment', 'COD']).map(opt => {
               return (
-                <AnimatedPressable key={opt} onPress={() => !disabled && setPayment(opt)} className={`flex-1 py-3 rounded-xl ${payment === opt ? 'bg-chai-primary' : ''} ${disabled ? 'opacity-40' : ''}`} scaleTo={0.95} haptic="selection">
+                <AnimatedPressable key={opt} onPress={() => setPayment(opt)} className={`flex-1 py-3 rounded-xl ${payment === opt ? 'bg-chai-primary' : ''}`} scaleTo={0.95} haptic="selection">
                   <Text className={`text-center font-medium ${payment === opt ? 'text-white' : 'text-chai-text-primary'}`}>{opt}</Text>
                 </AnimatedPressable>
               );
@@ -569,8 +564,8 @@ export default function CheckoutScreen() {
           {payment === 'Online Payment' && (
             <Text className="mt-2 text-xs text-chai-text-secondary">You&apos;ll be redirected to Razorpay to complete payment securely.</Text>
           )}
-          {type === 'Pickup' && (
-            <Text className="mt-2 text-xs text-red-600">Pickup requires advance payment — no COD.</Text>
+          {type === 'Pickup' && payment === 'Online Payment' && (
+            <Text className="mt-2 text-xs text-chai-text-secondary">Pickup requires advance payment — no COD.</Text>
           )}
           <TextInput value={note} onChangeText={setNote} placeholderTextColor="#757575" placeholder="Add a note (optional)" className="mt-3 bg-white border border-chai-divider rounded-xl px-4 py-3 text-chai-text-primary" returnKeyType="done" />
         </View>
