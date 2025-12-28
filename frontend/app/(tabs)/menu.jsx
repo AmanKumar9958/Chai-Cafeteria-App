@@ -27,6 +27,7 @@ export default function MenuScreen() {
 
   const [query, setQuery] = useState(incomingSearch ? String(incomingSearch) : '');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debounceTimer = useRef();
   const [categories, setCategories] = useState([{ _id: 'all', name: 'All' }]);
   const [selected, setSelected] = useState(initialCategory);
   const [items, setItems] = useState([]);
@@ -110,9 +111,21 @@ export default function MenuScreen() {
     }
   }, [selected, categories, isLoadingCats]);
 
+  // Only update debouncedQuery after 700ms of inactivity
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 300);
-    return () => clearTimeout(timer);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 700);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [query]);
+
+  // Only update debouncedQuery immediately when user submits
+  const handleSearchSubmit = React.useCallback(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    setDebouncedQuery(query);
   }, [query]);
 
   useEffect(() => {
@@ -145,7 +158,7 @@ export default function MenuScreen() {
     return (
       <AnimatedPressable
         onPress={() => handleSelectCategory(item._id)}
-        className={`p-1 mr-3 rounded-full items-center justify-center border ${selected === item._id ? 'bg-chai-primary border-chai-primary' : 'bg-white border-chai-divider'}`}
+        className={`p-1 mr-3 rounded-full items-center justify-center ${selected === item._id ? 'bg-chai-primary' : 'bg-white'}`}
         style={{ minWidth: 96, height: 48 }}
         scaleTo={0.9}
         haptic={false}
@@ -155,7 +168,7 @@ export default function MenuScreen() {
     );
   };
 
-  const ItemCardBase = ({ item }) => {
+  const ItemCardBase = memo(function ItemCard({ item, onAdd }) {
     const [loaded, setLoaded] = useState(false);
     const src = (() => {
       const u = normalizeImageUrl(item?.image);
@@ -173,14 +186,7 @@ export default function MenuScreen() {
             <View className="flex-row justify-between items-center">
               <Text className="text-sm text-chai-text-secondary">₹{Number(item.price).toFixed(2)}</Text>
               <AnimatedPressable
-                onPress={() => {
-                  addItem(item);
-                  if (itemsInCart.length === 0) {
-                    setShowCheckout(true);
-                    Animated.timing(checkoutAnim, { toValue: 1, duration: 220, useNativeDriver: true })?.start();
-                  }
-                  Toast.show({ type: 'bannerSuccess', text1: t('app.added_to_cart'), text2: item.name });
-                }}
+                onPress={() => onAdd(item)}
                 className="bg-chai-primary w-8 h-8 rounded-full items-center justify-center active:opacity-90"
                 scaleTo={0.85}
                 haptic="selection"
@@ -192,10 +198,22 @@ export default function MenuScreen() {
         </View>
       </View>
     );
-  };
+  });
   ItemCardBase.displayName = 'ItemCard';
-  const ItemCard = memo(ItemCardBase);
-  const renderItemCard = ({ item }) => <ItemCard item={item} />;
+
+  const handleAddItem = React.useCallback((item) => {
+    addItem(item);
+    if (itemsInCart.length === 0) {
+      setShowCheckout(true);
+      Animated.timing(checkoutAnim, { toValue: 1, duration: 220, useNativeDriver: true })?.start();
+    }
+    Toast.show({ type: 'bannerSuccess', text1: t('app.added_to_cart'), text2: item.name });
+  }, [addItem, itemsInCart.length, setShowCheckout, checkoutAnim, t]);
+
+  const renderItemCard = React.useCallback(
+    ({ item }) => <ItemCardBase item={item} onAdd={handleAddItem} />,
+    [handleAddItem]
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-chai-bg pt-5 mt-1" style={{ paddingBottom: bottomPadding }}>
@@ -210,7 +228,7 @@ export default function MenuScreen() {
             className="flex-1 text-[15px] text-chai-text-primary"
             clearButtonMode="while-editing"
             returnKeyType="search"
-            onSubmitEditing={() => setDebouncedQuery(query)}
+            onSubmitEditing={handleSearchSubmit}
           />
           {query.length > 0 && (
             <AnimatedPressable onPress={() => setQuery('')} className="p-1" scaleTo={0.85} haptic={false}>
@@ -226,6 +244,7 @@ export default function MenuScreen() {
         renderItem={renderItemCard}
         keyExtractor={(item) => item._id}
         numColumns={2}
+        extraData={itemsInCart.length}
         ListHeaderComponent={!isLoadingCats && categories.length > 0 ? (
           <View style={{ height: 64, backgroundColor: 'transparent' }}>
             <FlatList
