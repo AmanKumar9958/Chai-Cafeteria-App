@@ -190,12 +190,27 @@ export default function OrdersScreen() {
             {(() => {
               const d = item.createdAt ? new Date(item.createdAt) : null;
               const when = d ? d.toLocaleString() : null;
-              return when ? (
-                <Text className="text-[12px] text-chai-text-secondary mb-1">Placed on: {when}</Text>
-              ) : null;
+              const orderType = item.orderType || 'Pickup';
+              const paymentType = item.paymentMethod || '—';
+              let paymentBg = 'bg-gray-200', paymentText = 'text-gray-700';
+              if (paymentType === 'Online Payment') { paymentBg = 'bg-green-100'; paymentText = 'text-green-700'; }
+              else if (paymentType === 'COD') { paymentBg = 'bg-yellow-100'; paymentText = 'text-yellow-800'; }
+              return (
+                <View className="flex-row items-center mb-1 gap-2">
+                  {when ? (
+                    <Text className="text-[12px] text-chai-text-secondary">Placed on: {when}</Text>
+                  ) : null}
+                  <View className={`px-2 py-0.5 rounded-full ${orderType === 'Delivery' ? 'bg-blue-100' : 'bg-amber-100'}`} style={{ marginLeft: 4 }}>
+                    <Text className={`text-[11px] font-semibold ${orderType === 'Delivery' ? 'text-blue-700' : 'text-amber-700'}`}>{orderType}</Text>
+                  </View>
+                  <View className={`px-2 py-0.5 rounded-full ${paymentBg}`} style={{ marginLeft: 4 }}>
+                    <Text className={`text-[11px] font-semibold ${paymentText}`}>{paymentType}</Text>
+                  </View>
+                </View>
+              );
             })()}
             <StatusProgress status={item.status} />
-            <Text className="text-sm text-chai-text-secondary mb-2">Payment: {item.paymentMethod || '—'}</Text>
+            {/* Payment badge now shown above */}
             <View className="mt-1">
               {(item.items || []).map((it, idx) => (
                 <Text
@@ -216,8 +231,19 @@ export default function OrdersScreen() {
                 )}
               </View>
             )}
-            <View className="flex-row justify-between mt-2">
-              <Text className="text-sm text-chai-text-secondary">Items: {(item.items || []).length}</Text>
+            <View className="flex-row justify-between mt-2 items-center">
+              <Text className="text-sm text-chai-text-secondary">
+                Items: {(item.items || []).length}
+                {(() => {
+                  const count = (item.items || []).length;
+                  let mins = 10;
+                  if (count === 1) mins = 10;
+                  else if (count > 1 && count < 5) mins = 20;
+                  else if (count >= 5 && count < 10) mins = 30;
+                  else if (count >= 10) mins = 40;
+                  return ` • Order ready in ${mins} min${mins > 1 ? 's' : ''}`;
+                })()}
+              </Text>
               {(() => {
                 const toNum = (n) => {
                   if (n == null) return 0;
@@ -238,7 +264,6 @@ export default function OrdersScreen() {
                   </View>
                 );
               })()}
-              
             </View>
             {String(item.status).toLowerCase() === 'delivered' && (
               <View className="mt-3">
