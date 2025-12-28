@@ -8,7 +8,7 @@ import {
   Animated,
   Pressable,
   Easing,
-  ScrollView // Added ScrollView explicitly for the filter chips
+  ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,15 +51,6 @@ const sliderImages = [
 
 const PRICE_FILTERS = [80, 100, 150, 200];
 
-// Specific colors from your screenshots
-const COLORS = {
-  orange: '#EA580C', // Deep Orange
-  black: '#000000',
-  text: '#1F2937',
-  bg: '#FFFBF7', // Very slight off-white/warm bg
-};
-
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const onScroll = useTabBarScroll();
@@ -69,14 +60,16 @@ export default function HomeScreen() {
   const [name, setName] = useState('User');
   const [greeting, setGreeting] = useState('Good Morning');
   const [greetingKey, setGreetingKey] = useState(getGreetingKey());
+  
+  // Data States
   const [categories, setCategories] = useState([]);
-  const [popularItems, setPopularItems] = useState([]);
+  const [allItems, setAllItems] = useState([]); // Store all items for filtering
+  const [randomItems, setRandomItems] = useState([]); // Store initial random selection
   const [pizzaItems, setPizzaItems] = useState([]); 
   const [burgerItems, setBurgerItems] = useState([]); 
+  
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
-  // New State for Price Filter
   const [activePriceFilter, setActivePriceFilter] = useState(null);
 
   const sliderWidth = Dimensions.get('window').width - 48;
@@ -109,28 +102,22 @@ export default function HomeScreen() {
           axios.get(`${API_URL}/menu/categories`),
           axios.get(`${API_URL}/menu/items`)
         ]);
-        // Filter out 'sandwich' category as requested
+        
         setCategories((catRes.data.categories || []).filter(c => (c.name || '').toLowerCase() !== 'sandwich'));
         
-        // Filter for specific popular items: 3 Pizzas, 2 Burgers, 1 Chowmein, 1 Chilli
-        const allItems = itemRes.data.items || [];
-        const getItems = (term, limit) => allItems.filter(i => 
-          (i.name || '').toLowerCase().includes(term)
-        ).slice(0, limit);
+        const fetchedItems = itemRes.data.items || [];
+        setAllItems(fetchedItems);
 
-        const pizzas = getItems('pizza', 3);
-        const burgers = getItems('burger', 2);
-        const chowmein = getItems('chowmein', 1);
-        const chilli = getItems('chilli', 1);
+        // Pick 4 random items for initial display
+        const shuffled = [...fetchedItems].sort(() => 0.5 - Math.random());
+        setRandomItems(shuffled.slice(0, 4));
 
-        setPopularItems([...pizzas, ...burgers, ...chowmein, ...chilli]);
-
-        // Discover Delicious Pizzas section: 4 pizzas
-        const discoverPizzas = allItems.filter(i => (i.name || '').toLowerCase().includes('pizza')).slice(0, 4);
+        // Discover Delicious Pizzas section
+        const discoverPizzas = fetchedItems.filter(i => (i.name || '').toLowerCase().includes('pizza')).slice(0, 4);
         setPizzaItems(discoverPizzas);
 
         // Wide range of burgers
-        const discoverBurgers = allItems.filter(i => (i.name || '').toLowerCase().includes('burger')).slice(0, 4);
+        const discoverBurgers = fetchedItems.filter(i => (i.name || '').toLowerCase().includes('burger')).slice(0, 4);
         setBurgerItems(discoverBurgers);
 
       } catch (err) {
@@ -148,13 +135,20 @@ export default function HomeScreen() {
 
   const totalCartQuantity = cartItems.reduce((sum, item) => sum + (item.qty || 0), 0);
 
-  // Helper to filter items based on active price
   const getFilteredItems = (items) => {
     if (!activePriceFilter) return items;
     return items.filter(item => (item.price || 0) <= activePriceFilter);
   };
 
-  // --- Fixed Category Card ---
+  // Determine what to show in the grid
+  const gridItems = activePriceFilter 
+    ? allItems.filter(item => (item.price || 0) <= activePriceFilter).slice(0, 4) 
+    : randomItems;
+
+  const filteredPizzas = getFilteredItems(pizzaItems);
+  const filteredBurgers = getFilteredItems(burgerItems);
+
+  // --- Category Card ---
   const CategoryCardBase = ({ item }) => {
     const [loaded, setLoaded] = useState(false);
     const src = (() => {
@@ -190,8 +184,8 @@ export default function HomeScreen() {
   };
   const CategoryCard = memo(CategoryCardBase);
 
-  // --- Fixed Popular Card ---
-  const PopularItemCardBase = ({ item }) => {
+  // --- Regular Item Card (Horizontal Lists) ---
+  const PopularItemCardBase = ({ item, isGrid }) => {
     const [loaded, setLoaded] = useState(false);
     const src = (() => {
       const u = normalizeImageUrl(item?.imageURL || item?.image);
@@ -203,10 +197,15 @@ export default function HomeScreen() {
       Toast.show({ type: 'bannerSuccess', text1: t('app.added_to_cart'), text2: `${item.name} added` });
     };
 
+    // Responsive width for Grid: 'w-[48%]' ensures 2 items per row with space
+    const containerClass = isGrid 
+      ? "w-[48%] mb-4 bg-white border border-black rounded-3xl overflow-hidden" 
+      : "w-40 mr-4 bg-white border border-black rounded-3xl overflow-hidden";
+
     return (
       <Pressable
         onPress={() => router.push({ pathname: '/(tabs)/menu', params: { search: item.name } })}
-        className="w-40 mr-4 bg-white border border-black rounded-3xl overflow-hidden" 
+        className={containerClass}
       >
         <View className="w-full h-36 bg-white items-center justify-center">
            {!loaded && (
@@ -229,10 +228,8 @@ export default function HomeScreen() {
           <Text className="text-black font-bold text-base mb-2 leading-5" numberOfLines={1}>
             {item.name}
           </Text>
-          
           <View className="flex-row justify-between items-center">
             <Text className="text-orange-600 font-extrabold text-lg">₹{item.price}</Text>
-            
             <Pressable 
               onPress={handleAddToCart}
               className="bg-orange-600 w-8 h-8 rounded-full items-center justify-center"
@@ -257,17 +254,12 @@ export default function HomeScreen() {
     ]).start();
   }, [slideAnim, fadeAnim]);
 
-  // Derived filtered data
-  const filteredPopular = getFilteredItems(popularItems);
-  const filteredPizzas = getFilteredItems(pizzaItems);
-  const filteredBurgers = getFilteredItems(burgerItems);
-
   return (
     <SafeAreaView className="flex-1 bg-[#FFFBF7] pt-5 mt-1" style={{ paddingBottom: bottomPadding + 40 }}>
       <StatusBar style="dark" />
       {isLoading ? (
         <>
-          <View className="px-6">
+           <View className="px-6">
             <View className="flex-row justify-between items-center mb-6">
               <View>
                 <Text className="text-xl text-gray-500 font-medium">{t(`app.${greetingKey}`)},</Text>
@@ -279,11 +271,6 @@ export default function HomeScreen() {
           </View>
           <View className="px-6 mt-4">
             <Skeleton width="100%" height={176} borderRadius={16} style={{ marginBottom: 24 }} />
-            <View className="flex-row">
-                 {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} width={100} height={140} borderRadius={24} style={{ marginRight: 15 }} />
-                 ))}
-            </View>
           </View>
         </>
       ) : (
@@ -325,7 +312,8 @@ export default function HomeScreen() {
             <Animated.ScrollView 
               onScroll={onScroll}
               scrollEventThrottle={16}
-              contentContainerStyle={{ paddingBottom: 120 + bottomPadding }}
+              // REDUCED BOTTOM PADDING HERE (From 120 to 80)
+              contentContainerStyle={{ paddingBottom: 80 + bottomPadding }}
               showsVerticalScrollIndicator={false}
             >
               {/* Carousel */}
@@ -345,7 +333,6 @@ export default function HomeScreen() {
               {/* Categories Section */}
               <View className="mb-6">
                 <View className="flex-row items-center justify-between px-6 mb-4">
-                  {/* Styled Header */}
                   <Text className="text-xl font-bold text-black">
                     {t('app.categories')}
                   </Text>
@@ -363,17 +350,17 @@ export default function HomeScreen() {
                 />
               </View>
 
-              {/* --- NEW PRICE FILTER SECTION --- */}
-              <View className="mb-8">
+              {/* --- PRICE FILTER SECTION --- */}
+              <View className="mb-6">
                  <View className="flex-row items-center justify-between px-6 mb-3">
-                    <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
                         <Text className="text-xl font-bold text-black mr-3">Filter by Price</Text>
                         {activePriceFilter && (
                             <Pressable 
                                 onPress={() => setActivePriceFilter(null)}
-                                className="bg-red-500 px-2 py-1 rounded-md"
+                                className="bg-gray-200 px-2 py-1 rounded-md"
                             >
-                                <Text className="text-xs text-white font-semibold text-center" numberOfLines={1}>Clear</Text>
+                                <Text className="text-xs text-black font-semibold">Clear</Text>
                             </Pressable>
                         )}
                     </View>
@@ -399,36 +386,28 @@ export default function HomeScreen() {
                     })}
                  </ScrollView>
               </View>
-              {/* --- END PRICE FILTER SECTION --- */}
 
-
-              {/* Most Popular Section (Filtered) */}
-              {filteredPopular.length > 0 ? (
-                <View className="mb-6">
-                  <View className="flex-row items-center justify-between px-6 mb-4">
-                    <Text className="text-xl font-bold text-black" numberOfLines={1}>
-                      {t('app.most_popular') === 'app.most_popular' ? 'Most Popular' : t('app.most_popular')}
-                    </Text>
-                    <Pressable onPress={() => router.push({ pathname: '/(tabs)/menu' })}>
-                      <Text className="text-sm text-orange-600 font-bold" numberOfLines={1}>{t('app.see_all')}</Text>
-                    </Pressable>
-                  </View>
-                  <FlatList
-                    horizontal
-                    data={filteredPopular}
-                    renderItem={({ item }) => <PopularItemCard item={item} />}
-                    keyExtractor={i => i._id}
-                    contentContainerStyle={{ paddingHorizontal: 24 }}
-                    showsHorizontalScrollIndicator={false}
-                  />
-                </View>
-              ) : activePriceFilter ? (
-                  <View className="px-6 mb-6"><Text className="text-gray-500 italic">No popular items under ₹{activePriceFilter}</Text></View>
-              ) : null}
+              {/* --- DYNAMIC GRID SECTION (REPLACES MOST POPULAR) --- */}
+              <View className="mb-6 px-6">
+                  {/* Title changes based on state */}
+                  <Text className="text-xl font-bold text-black mb-4">
+                     {activePriceFilter ? `Best under ₹${activePriceFilter}` : 'Quick Picks For You'}
+                  </Text>
+                  
+                  {gridItems.length > 0 ? (
+                      <View className="flex-row flex-wrap justify-between">
+                          {gridItems.map(item => (
+                             <PopularItemCard key={item._id} item={item} isGrid={true} />
+                          ))}
+                      </View>
+                  ) : (
+                      <Text className="text-gray-500 italic">No items found in this range.</Text>
+                  )}
+              </View>
 
               {/* Discover Delicious Pizzas Section (Filtered) */}
               {filteredPizzas.length > 0 && (
-                <View className="mb-6 mt-4">
+                <View className="mb-6 mt-2">
                   <View className="flex-row items-center justify-between px-6 mb-4">
                     <Text className="text-xl font-bold text-black" numberOfLines={1}>
                       {t('app.discover_delicious_pizzas') === 'app.discover_delicious_pizzas' ? 'Discover Delicious Pizzas' : t('app.discover_delicious_pizzas')}
@@ -446,7 +425,7 @@ export default function HomeScreen() {
                   <FlatList
                     horizontal
                     data={filteredPizzas}
-                    renderItem={({ item }) => <PopularItemCard item={item} />}
+                    renderItem={({ item }) => <PopularItemCard item={item} isGrid={false} />}
                     keyExtractor={i => i._id}
                     contentContainerStyle={{ paddingHorizontal: 24 }}
                     showsHorizontalScrollIndicator={false}
@@ -474,7 +453,7 @@ export default function HomeScreen() {
                   <FlatList
                     horizontal
                     data={filteredBurgers}
-                    renderItem={({ item }) => <PopularItemCard item={item} />}
+                    renderItem={({ item }) => <PopularItemCard item={item} isGrid={false} />}
                     keyExtractor={i => i._id}
                     contentContainerStyle={{ paddingHorizontal: 24 }}
                     showsHorizontalScrollIndicator={false}
