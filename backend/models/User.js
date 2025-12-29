@@ -18,13 +18,12 @@ const UserSchema = new mongoose.Schema(
             type: {
                 type: String,
                 enum: ['Point'],
-                default: 'Point',
-                required: false,
+                default: 'Point'
             },
             coordinates: {
-                type: [Number], // [longitude, latitude]
-                required: false,
-            },
+                type: [Number],
+                default: [0, 0]
+            }
         },
     },
     { timestamps: true }

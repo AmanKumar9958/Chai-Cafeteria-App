@@ -232,18 +232,22 @@ export default function OrdersScreen() {
               </View>
             )}
             <View className="flex-row justify-between mt-2 items-center">
-              <Text className="text-sm text-chai-text-secondary">
-                Items: {(item.items || []).length}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text className="text-sm text-chai-text-secondary">Items: {(item.items || []).length}</Text>
                 {(() => {
-                  const count = (item.items || []).length;
-                  let mins = 10;
-                  if (count === 1) mins = 10;
-                  else if (count > 1 && count < 5) mins = 20;
-                  else if (count >= 5 && count < 10) mins = 30;
-                  else if (count >= 10) mins = 40;
-                  return ` • Order ready in ${mins} min${mins > 1 ? 's' : ''}`;
+                  const totalItems = (item.items || []).reduce((sum, it) => sum + (it.qty || it.quantity || 1), 0);
+                  let mins = 25;
+                  if (totalItems <= 2) mins = 7;
+                  else if (totalItems <= 5) mins = 12;
+                  else if (totalItems <= 10) mins = 18;
+                  // Style for ready time
+                  return (
+                    <Text className="ml-2 px-2 py-0.5 rounded bg-green-100 text-green-800 font-medium" style={{ backgroundColor: '#e6f9ec' }}>
+                      Order ready in <Text className="font-bold">{mins}</Text> min{mins > 1 ? 's' : ''}
+                    </Text>
+                  );
                 })()}
-              </Text>
+              </View>
               {(() => {
                 const toNum = (n) => {
                   if (n == null) return 0;

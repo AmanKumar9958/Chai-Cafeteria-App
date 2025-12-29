@@ -74,6 +74,21 @@ export default function OrdersPage() {
                   {o.createdAt && (
                     <div className="mt-1 text-xs inline-block px-2 py-0.5 rounded bg-lime-300 text-gray-700 font-medium">Placed on: {new Date(o.createdAt).toLocaleString()}</div>
                   )}
+                  {/* Order ready time */}
+                  {o.items && o.items.length > 0 && (
+                    (() => {
+                      const totalItems = o.items.reduce((sum, it) => sum + (it.qty || it.quantity || 1), 0);
+                      let readyMinutes = 25;
+                      if (totalItems <= 2) readyMinutes = 7;
+                      else if (totalItems <= 5) readyMinutes = 12;
+                      else if (totalItems <= 10) readyMinutes = 18;
+                      return (
+                        <div className="mt-1 text-xs inline-block px-2 py-0.5 rounded bg-green-100 text-green-800 font-medium" style={{ background: '#e6f9ec' }}>
+                          Order ready in <span className="font-bold">{readyMinutes}</span> minutes
+                        </div>
+                      );
+                    })()
+                  )}
                 </div>
                 <div className="mt-2 sm:mt-0">
                   <select 

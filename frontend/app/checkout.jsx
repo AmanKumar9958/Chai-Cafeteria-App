@@ -71,6 +71,9 @@ export default function CheckoutScreen() {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [paying, setPaying] = useState(false);
+  // Modal for order ready time
+  const [showReadyModal, setShowReadyModal] = useState(false);
+  const [readyMinutes, setReadyMinutes] = useState(null);
   // Location-based delivery check
   const [locationChecked, setLocationChecked] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -117,6 +120,14 @@ export default function CheckoutScreen() {
 
   // All delivery eligibility and distance checking code has been removed.
 
+  // Helper to calculate ready time based on item count
+  const getReadyMinutes = (itemCount) => {
+    if (itemCount <= 2) return 7;
+    if (itemCount <= 5) return 12;
+    if (itemCount <= 10) return 18;
+    return 25;
+  };
+
   const placeOrder = async () => {
     if (!canSubmit) return;
     // If online payment, run Razorpay flow first, then place order with payment details
@@ -141,10 +152,15 @@ export default function CheckoutScreen() {
         items: items.map(it => ({ itemId: it._id, name: it.name, price: Number(it.price), qty: it.qty })),
         totals,
       };
-  await axios.post(`${API_URL}/orders`, payload, { headers: { Authorization: `Bearer ${userToken}` } });
+      await axios.post(`${API_URL}/orders`, payload, { headers: { Authorization: `Bearer ${userToken}` } });
       Toast.show({ type: 'bannerSuccess', text1: 'Order placed!', text2: "We'll get started right away." });
+      // Show order ready modal
+      const totalItems = items.reduce((sum, it) => sum + (it.qty || 0), 0);
+      setReadyMinutes(getReadyMinutes(totalItems));
+      setShowReadyModal(true);
       clear();
-      router.replace('/(tabs)/orders');
+      // Delay navigation until modal is closed
+      // router.replace('/(tabs)/orders');
     } catch (e) {
       console.error('Order failed', e?.response?.data || e?.message || e);
       Toast.show({ type: 'bannerError', text1: 'Failed to place order', text2: 'Please try again.' });
@@ -230,8 +246,13 @@ export default function CheckoutScreen() {
       };
   await axios.post(`${API_URL}/orders`, payload, { headers: { Authorization: `Bearer ${userToken}` } });
       Toast.show({ type: 'bannerSuccess', text1: 'Payment successful', text2: 'Order placed!' });
+      // Show order ready modal
+      const totalItems = items.reduce((sum, it) => sum + (it.qty || 0), 0);
+      setReadyMinutes(getReadyMinutes(totalItems));
+      setShowReadyModal(true);
       clear();
-      router.replace('/(tabs)/orders');
+      // Delay navigation until modal is closed
+      // router.replace('/(tabs)/orders');
     } catch (e) {
       const status = e?.response?.status;
       const data = e?.response?.data;
@@ -584,6 +605,7 @@ export default function CheckoutScreen() {
         </AnimatedPressable>
       </View>
 
+      {/* Pincode error modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -603,6 +625,40 @@ export default function CheckoutScreen() {
               onPress={() => {
                 setShowPincodeError(false);
                 setPincode('');
+              }}
+              className="bg-chai-primary py-3 px-8 rounded-xl w-full"
+            >
+              <Text className="text-white font-semibold text-center">Okay</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Order ready modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showReadyModal}
+        onRequestClose={() => {
+          setShowReadyModal(false);
+          setReadyMinutes(null);
+          router.replace('/(tabs)/orders');
+        }}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-4">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-sm items-center shadow-xl">
+            <View className="w-16 h-16 bg-green-100 rounded-full items-center justify-center mb-4">
+              <Text className="text-3xl">⏰</Text>
+            </View>
+            <Text className="text-xl font-bold text-chai-text-primary mb-2 text-center">Order Ready Soon!</Text>
+            <Text className="text-chai-text-secondary text-center mb-6">
+              Order ready in <Text className="font-bold text-chai-primary">{readyMinutes}</Text> minutes.
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setShowReadyModal(false);
+                setReadyMinutes(null);
+                router.replace('/(tabs)/orders');
               }}
               className="bg-chai-primary py-3 px-8 rounded-xl w-full"
             >

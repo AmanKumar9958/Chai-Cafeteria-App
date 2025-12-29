@@ -79,8 +79,25 @@ exports.verifyOtp = async (req, res) => {
             return res.status(400).json({ msg: 'User already exists. Please login.' });
         }
 
+
         // Create final user using hashed password from pending record
-    const newUser = new User({ name: pending.name, email: pending.email, password: pending.password, phone: pending.phone, address1: pending.address1, address2: pending.address2, isVerified: true });
+        const userData = {
+            name: pending.name,
+            email: pending.email,
+            password: pending.password,
+            phone: pending.phone,
+            address1: pending.address1,
+            address2: pending.address2,
+            isVerified: true
+        };
+        // Only add location if valid
+        if (pending.location && Array.isArray(pending.location.coordinates) && pending.location.coordinates.length === 2) {
+            userData.location = {
+                type: 'Point',
+                coordinates: pending.location.coordinates
+            };
+        }
+        const newUser = new User(userData);
         await newUser.save();
 
         // Remove pending record
@@ -206,7 +223,12 @@ exports.resetPassword = async (req, res) => {
 
         const salt = await bcrypt.genSalt(10);
         const hashed = await bcrypt.hash(newPassword, salt);
+
         user.password = hashed;
+        // Remove invalid location field if present
+        if (user.location && (!Array.isArray(user.location.coordinates) || user.location.coordinates.length !== 2)) {
+            user.location = undefined;
+        }
         await user.save();
 
         await PasswordReset.deleteOne({ _id: rec._id });
