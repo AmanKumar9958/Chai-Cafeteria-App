@@ -338,12 +338,13 @@ export default function CheckoutScreen() {
   };
 
   const QtyControl = React.memo(({ item }) => {
+    const variant = item.variant || item.portion;
     return (
       <View className="flex-row items-center">
-        <AnimatedPressable onPress={() => updateQty(item._id, Math.max(1, (item.qty || 1) - 1))} className="w-8 h-8 rounded-full bg-gray-200 items-center justify-center" scaleTo={0.85} haptic="selection"><Text>-</Text></AnimatedPressable>
+        <AnimatedPressable onPress={() => updateQty(item._id, Math.max(1, (item.qty || 1) - 1), variant)} className="w-8 h-8 rounded-full bg-gray-200 items-center justify-center" scaleTo={0.85} haptic="selection"><Text>-</Text></AnimatedPressable>
         <Text className="mx-3 font-semibold">{item.qty || 0}</Text>
-        <AnimatedPressable onPress={() => updateQty(item._id, (item.qty || 0) + 1)} className="w-8 h-8 rounded-full bg-gray-200 items-center justify-center" scaleTo={0.85} haptic="selection"><Text>+</Text></AnimatedPressable>
-        <AnimatedPressable onPress={() => removeItem(item._id)} className="ml-3 px-3 py-1 rounded-full bg-red-100" scaleTo={0.9} haptic="impactLight"><Text className="text-red-600 text-xs">Remove</Text></AnimatedPressable>
+        <AnimatedPressable onPress={() => updateQty(item._id, (item.qty || 0) + 1, variant)} className="w-8 h-8 rounded-full bg-gray-200 items-center justify-center" scaleTo={0.85} haptic="selection"><Text>+</Text></AnimatedPressable>
+        <AnimatedPressable onPress={() => removeItem(item._id, variant)} className="ml-3 px-3 py-1 rounded-full bg-red-100" scaleTo={0.9} haptic="impactLight"><Text className="text-red-600 text-xs">Remove</Text></AnimatedPressable>
       </View>
     );
   });
