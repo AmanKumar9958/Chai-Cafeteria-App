@@ -211,16 +211,28 @@ export default function OrdersScreen() {
             })()}
             <StatusProgress status={item.status} />
             {/* Payment badge now shown above */}
-            <View className="mt-1">
+            <View className="mt-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
               {(item.items || []).map((it, idx) => (
-                <Text
-                  key={(it._id || it.id || idx) + ''}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                  className="text-sm text-chai-text-primary"
-                >
-                  • {it.name} x {it.qty || it.quantity || 1}
-                </Text>
+                <View key={(it._id || it.id || '') + (it.variant || '') + idx} className="flex-row justify-between items-center mb-1.5 last:mb-0">
+                  <View className="flex-row items-center flex-1 mr-2">
+                    <Text className="text-xs font-bold text-gray-700 w-6">{it.qty || it.quantity || 1}x</Text>
+                    <Text className="text-xs text-gray-800 flex-1 font-medium" numberOfLines={1}>
+                      {it.name}
+                      {(it.variant || it.portion) && (
+                        <Text className="text-gray-500 font-normal">
+                          {(() => {
+                            const v = (it.variant || it.portion).toString().toLowerCase();
+                            if (v.includes('half')) return ' (H)';
+                            if (v.includes('full')) return ' (F)';
+                            if (v.includes('6')) return ' (6)';
+                            if (v.includes('12')) return ' (12)';
+                            return ` (${it.variant || it.portion})`;
+                          })()}
+                        </Text>
+                      )}
+                    </Text>
+                  </View>
+                </View>
               ))}
             </View>
             {(!!item.couponCode || Number(item.discount || 0) > 0) && (

@@ -8,6 +8,14 @@ const ItemSchema = new mongoose.Schema(
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
     image: { type: String },
     active: { type: Boolean, default: true },
+    hasPortions: { type: Boolean, default: false },
+    variantType: { type: String, enum: ['none', 'portion', 'pieces'], default: 'none' },
+    portions: [
+      {
+        name: { type: String }, // e.g., "Half", "Full", "6 pcs"
+        price: { type: Number }
+      }
+    ]
   },
   { timestamps: true }
 );

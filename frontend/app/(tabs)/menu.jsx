@@ -9,6 +9,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 import Skeleton from '../../components/Skeleton';
 import AnimatedPressable from '../../components/AnimatedPressable';
+import ItemCustomizationModal from '../../components/ItemCustomizationModal';
 import { useTranslation } from 'react-i18next';
 import { useTabBarScroll } from '../../context/TabBarContext';
 
@@ -38,6 +39,9 @@ export default function MenuScreen() {
   const [showCheckout, setShowCheckout] = useState(false);
   const checkoutAnim = useRef(new Animated.Value(0)).current;
   const catsRef = useRef(null);
+
+  const [customizationItem, setCustomizationItem] = useState(null);
+  const [isCustomizationVisible, setIsCustomizationVisible] = useState(false);
 
   useEffect(() => {
     if (itemsInCart.length > 0) {
@@ -176,39 +180,51 @@ export default function MenuScreen() {
     })();
     return (
       <View className="flex-1 p-2">
-        <View className="bg-white rounded-2xl shadow-md overflow-hidden">
+        <AnimatedPressable 
+          onPress={() => onAdd(item)}
+          className="bg-white rounded-2xl shadow-md overflow-hidden"
+          scaleTo={0.97}
+          haptic="selection"
+        >
           <View style={{ width: '100%', height: 128 }}>
             {!loaded && <View className="absolute inset-0"><Skeleton width="100%" height={128} borderRadius={16} /></View>}
             <ExpoImage source={src} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={0} priority="high" onLoadEnd={() => setLoaded(true)} />
           </View>
           <View className="p-3">
-            <Text className="text-base font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{item.name}</Text>
-            <View className="flex-row justify-between items-center">
-              <Text className="text-sm text-chai-text-secondary">₹{Number(item.price).toFixed(2)}</Text>
-              <AnimatedPressable
-                onPress={() => onAdd(item)}
-                className="bg-chai-primary w-8 h-8 rounded-full items-center justify-center active:opacity-90"
-                scaleTo={0.85}
-                haptic="selection"
-              >
-                <Ionicons name="add" size={20} color="white" />
-              </AnimatedPressable>
-            </View>
+            <Text className="text-lg font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{item.name}</Text>
+            {(item.hasPortions || (item.portions && item.portions.length > 0)) ? (
+               <View className="mt-1">
+                 {item.portions.map((p, idx) => (
+                   <View key={idx} className="flex-row justify-between items-center mb-1">
+                     <Text className="text-sm text-chai-text-secondary" numberOfLines={1}>{p.name}</Text>
+                     <Text className="text-xs font-semibold text-chai-text-primary">₹{p.price}</Text>
+                   </View>
+                 ))}
+               </View>
+            ) : (
+               <Text className="text-sm text-chai-text-secondary mt-1">₹{Number(item.price).toFixed(2)}</Text>
+            )}
           </View>
-        </View>
+        </AnimatedPressable>
       </View>
     );
   });
   ItemCardBase.displayName = 'ItemCard';
 
   const handleAddItem = React.useCallback((item) => {
-    addItem(item);
+    setCustomizationItem(item);
+    setIsCustomizationVisible(true);
+  }, []);
+
+  const handleAddToCartFromModal = (customizedItem) => {
+    addItem(customizedItem);
     if (itemsInCart.length === 0) {
       setShowCheckout(true);
       Animated.timing(checkoutAnim, { toValue: 1, duration: 220, useNativeDriver: true })?.start();
     }
-    Toast.show({ type: 'bannerSuccess', text1: t('app.added_to_cart'), text2: item.name });
-  }, [addItem, itemsInCart.length, setShowCheckout, checkoutAnim, t]);
+    const portionText = customizedItem.portion ? ` (${customizedItem.portion})` : '';
+    Toast.show({ type: 'bannerSuccess', text1: t('app.added_to_cart'), text2: `${customizedItem.name}${portionText}` });
+  };
 
   const renderItemCard = React.useCallback(
     ({ item }) => <ItemCardBase item={item} onAdd={handleAddItem} />,
@@ -338,6 +354,12 @@ export default function MenuScreen() {
           </AnimatedPressable>
         </Animated.View>
       )}
+      <ItemCustomizationModal 
+        visible={isCustomizationVisible} 
+        item={customizationItem} 
+        onClose={() => setIsCustomizationVisible(false)} 
+        onAddToCart={handleAddToCartFromModal} 
+      />
     </SafeAreaView>
   );
 }

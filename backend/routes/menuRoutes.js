@@ -7,6 +7,7 @@ const {
 	createCategory,
 	deleteCategory,
 	createItem,
+	updateItem,
 	deleteItem,
 } = require('../controllers/menuController');
 
@@ -18,6 +19,7 @@ router.get('/search', search);
 router.post('/categories', createCategory);
 router.delete('/categories/:id', deleteCategory);
 router.post('/items', createItem);
+router.put('/items/:id', updateItem);
 router.delete('/items/:id', deleteItem);
 
 module.exports = router;

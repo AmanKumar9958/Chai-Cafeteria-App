@@ -19,7 +19,21 @@ export default function CartScreen() {
   const renderItem = ({ item }) => (
     <View className="bg-white rounded-lg p-4 mb-4 flex-row items-center justify-between border border-chai-divider">
       <View style={{ flex: 1 }}>
-        <Text className="font-bold text-chai-text-primary">{item.name}</Text>
+        <Text className="font-bold text-chai-text-primary">
+          {item.name}
+          {(item.variant || item.portion) && (
+            <Text className="font-normal text-chai-text-secondary">
+              {(() => {
+                const v = (item.variant || item.portion).toString().toLowerCase();
+                if (v.includes('half')) return ' (H)';
+                if (v.includes('full')) return ' (F)';
+                if (v.includes('6')) return ' (6)';
+                if (v.includes('12')) return ' (12)';
+                return ` (${item.variant || item.portion})`;
+              })()}
+            </Text>
+          )}
+        </Text>
         <Text className="text-sm text-chai-text-secondary">₹{item.price}</Text>
       </View>
 
@@ -28,12 +42,12 @@ export default function CartScreen() {
           onPress={() => {
             const current = item.qty || 0;
             if (current <= 1) {
-              removeItem(item._id);
+              removeItem(item._id, item.portion);
               Toast.show({ type: 'bannerSuccess', text1: 'Removed from cart' });
               return;
             }
             // Fast decrement without toast for smoother UX
-            updateQty(item._id, Math.max(0, current - 1));
+            updateQty(item._id, Math.max(0, current - 1), item.portion);
           }}
           className="p-2 mr-2 bg-gray-200 rounded"
           scaleTo={0.85}
@@ -45,13 +59,13 @@ export default function CartScreen() {
         <Text className="mx-2 font-bold">{item.qty || 0}</Text>
 
         <AnimatedPressable onPress={() => { // Fast increment without toast for smoother UX
-          updateQty(item._id, (item.qty || 0) + 1);
+          updateQty(item._id, (item.qty || 0) + 1, item.portion);
         }} className="p-2 ml-2 bg-chai-primary rounded" scaleTo={0.85} haptic="selection">
           <Ionicons name="add" size={18} color="#fff" />
         </AnimatedPressable>
 
         <AnimatedPressable onPress={() => {
-          removeItem(item._id);
+          removeItem(item._id, item.portion);
           Toast.show({ type: 'bannerSuccess', text1: 'Removed from cart' });
         }} className="ml-3 p-2" scaleTo={0.9} haptic="impactLight">
           <Feather name="x" size={18} color="#e11d48" />
@@ -86,7 +100,7 @@ export default function CartScreen() {
           </View>
         ) : (
           <>
-            <FlatList data={itemsList} renderItem={renderItem} keyExtractor={i => String(i._id)} />
+            <FlatList data={itemsList} renderItem={renderItem} keyExtractor={(i, idx) => String(i._id) + (i.variant || i.portion || '') + idx} />
             <View className="mt-auto">
               <View className="h-[1px] bg-chai-divider mx-4" />
               <View className="flex-row justify-between items-center p-4">

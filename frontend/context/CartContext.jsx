@@ -55,43 +55,48 @@ export const CartProvider = ({ children }) => {
 
   const addItem = (item) => {
     setItems(prev => {
-      const found = prev.find(p => p._id === item._id);
+      const itemPortion = item.portion || null;
+      const found = prev.find(p => p._id === item._id && (p.portion || null) === itemPortion);
       if (found) {
-        return prev.map(p => p._id === item._id ? { ...p, qty: p.qty + 1 } : p);
+        return prev.map(p => (p._id === item._id && (p.portion || null) === itemPortion) ? { ...p, qty: p.qty + 1 } : p);
       }
-      return [...prev, { ...item, qty: 1 }];
+      return [...prev, { ...item, qty: 1, portion: itemPortion }];
     });
   };
 
-  const removeItem = (itemId) => {
-    setItems(prev => prev.filter(p => p._id !== itemId));
+  const removeItem = (itemId, portion = null) => {
+    setItems(prev => prev.filter(p => !(p._id === itemId && (p.portion || null) === portion)));
   };
 
-  const updateQty = (itemId, qty) => {
-    setItems(prev => prev.map(p => p._id === itemId ? { ...p, qty } : p));
+  const updateQty = (itemId, qty, portion = null) => {
+    setItems(prev => prev.map(p => (p._id === itemId && (p.portion || null) === portion) ? { ...p, qty } : p));
   };
 
   // Add multiple items at once, preserving/incrementing quantities
   const addItemsBatch = (incoming = []) => {
     if (!Array.isArray(incoming) || incoming.length === 0) return;
     setItems(prev => {
-      const byId = new Map(prev.map(p => [String(p._id), { ...p }]));
+      const byId = new Map(prev.map(p => [String(p._id) + (p.portion || ''), { ...p }]));
       for (const it of incoming) {
         if (!it) continue;
         const idRaw = it._id ?? it.id ?? it.itemId ?? it.productId ?? it.menuItemId ?? it.sku ?? it.code ?? null;
         const id = idRaw ? String(idRaw) : `${String(it.name || 'item')}-${String(it.price ?? '')}`; // final fallback to name-price
+        const portion = it.portion || '';
+        const key = id + portion;
+
         const addQty = Math.max(1, Number(it.qty ?? it.quantity ?? 1) || 1);
-        const existing = byId.get(id);
+        const existing = byId.get(key);
         if (existing) {
           existing.qty = Math.max(1, Number(existing.qty || 0) + addQty);
-          byId.set(id, existing);
+          byId.set(key, existing);
         } else {
-          byId.set(id, {
+          byId.set(key, {
             _id: id,
             name: it.name ?? it.title ?? 'Item',
             price: Number(it.price ?? it.unitPrice ?? it.amount ?? 0),
             imageURL: it.imageURL ?? it.image ?? undefined,
             qty: addQty,
+            portion: it.portion || undefined,
           });
         }
       }

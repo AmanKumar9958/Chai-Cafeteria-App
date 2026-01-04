@@ -379,11 +379,27 @@ export default function CheckoutScreen() {
           {items.length === 0 ? (
             <Text className="text-chai-text-secondary">Your cart is empty.</Text>
           ) : (
-            items.map(it => (
-              <View key={it._id} className="flex-row items-center justify-between py-2 border-b border-chai-divider/60">
-                <View style={{ flex: 1 }}>
-                  <Text className="font-medium text-chai-text-primary" numberOfLines={1}>{it.name}</Text>
-                  <Text className="text-chai-text-secondary">₹{Number(it.price).toFixed(2)}</Text>
+            items.map((it, idx) => (
+              <View key={it._id + (it.variant || it.portion || '') + idx} className="flex-row items-center justify-between py-3 border-b border-chai-divider/60 last:border-0">
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text className="font-semibold text-chai-text-primary text-base">
+                    {it.name}
+                    {(it.variant || it.portion) && (
+                      <Text className="text-chai-text-secondary font-normal">
+                        {(() => {
+                          const v = (it.variant || it.portion).toString().toLowerCase();
+                          if (v.includes('half')) return ' (H)';
+                          if (v.includes('full')) return ' (F)';
+                          if (v.includes('6')) return ' (6)';
+                          if (v.includes('12')) return ' (12)';
+                          return ` (${it.variant || it.portion})`;
+                        })()}
+                      </Text>
+                    )}
+                  </Text>
+                  <View className="flex-row items-center mt-1">
+                    <Text className="text-chai-text-secondary font-medium">₹{Number(it.price).toFixed(2)}</Text>
+                  </View>
                 </View>
                 <QtyControl item={it} />
               </View>

@@ -8,6 +8,7 @@ const OrderItemSchema = new mongoose.Schema(
     qty: { type: Number, required: true, min: 1 },
     image: { type: String },
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
+    portion: { type: String }, // e.g., "Half", "Full"
   },
   { _id: false }
 );

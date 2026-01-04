@@ -94,15 +94,77 @@ exports.deleteCategory = async (req, res) => {
 // admin: create item
 exports.createItem = async (req, res) => {
   try {
-    const { name, price, category, image, description } = req.body || {};
+    const { name, price, category, image, description, hasPortions, portions, variantType } = req.body || {};
     if (!name || typeof price === 'undefined' || !category) {
       return res.status(400).json({ msg: 'name, price and category are required' });
     }
-    const item = new Item({ name, price, category, image, description });
+
+    // Ensure portions are valid
+    let validPortions = [];
+    if (Array.isArray(portions)) {
+      validPortions = portions.filter(p => p.name && p.price !== undefined);
+    }
+
+    // Determine variant type and hasPortions flag
+    let finalVariantType = variantType || 'none';
+    let finalHasPortions = hasPortions || false;
+
+    if (validPortions.length > 0) {
+      finalHasPortions = true;
+      if (finalVariantType === 'none') {
+        // Default to 'portion' if portions exist but type is none
+        finalVariantType = 'portion'; 
+      }
+    } else {
+      finalHasPortions = false;
+      finalVariantType = 'none';
+    }
+
+    const item = new Item({ 
+      name, 
+      price, 
+      category, 
+      image, 
+      description, 
+      hasPortions: finalHasPortions,
+      variantType: finalVariantType,
+      portions: validPortions 
+    });
     await item.save();
     res.status(201).json({ item });
   } catch (err) {
     console.error('createItem', err);
+    res.status(500).send('Server error');
+  }
+};
+
+// admin: update item
+exports.updateItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    // If portions are being updated, ensure consistency
+    if (updates.portions && Array.isArray(updates.portions)) {
+       const validPortions = updates.portions.filter(p => p.name && p.price !== undefined);
+       updates.portions = validPortions;
+       
+       if (validPortions.length > 0) {
+         updates.hasPortions = true;
+         if (!updates.variantType || updates.variantType === 'none') {
+            updates.variantType = 'portion';
+         }
+       } else {
+         updates.hasPortions = false;
+         updates.variantType = 'none';
+       }
+    }
+
+    const item = await Item.findByIdAndUpdate(id, updates, { new: true });
+    if (!item) return res.status(404).json({ msg: 'Item not found' });
+    res.json({ item });
+  } catch (err) {
+    console.error('updateItem', err);
     res.status(500).send('Server error');
   }
 };

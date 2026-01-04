@@ -58,7 +58,12 @@ export default function OrdersPage() {
         </div>
         <div className="space-y-4">
           {orders.map(o => (
-            <div key={o._id || o.id} className="border border-gray-200 rounded-lg p-4">
+            <div key={o._id || o.id} className={`border border-gray-200 rounded-lg p-4 border-l-4 ${
+              o.status === 'Delivered' ? 'border-l-green-500' :
+              o.status === 'Cancelled' ? 'border-l-red-500' :
+              o.status === 'Order Placed' ? 'border-l-blue-500' :
+              'border-l-amber-500'
+            }`}>
               <div className="flex flex-col sm:flex-row justify-between sm:items-center">
                 <div>
                   <strong className="text-gray-800">Order ID: {o._id || o.id}</strong>
@@ -74,6 +79,34 @@ export default function OrdersPage() {
                   {o.createdAt && (
                     <div className="mt-1 text-xs inline-block px-2 py-0.5 rounded bg-lime-300 text-gray-700 font-medium">Placed on: {new Date(o.createdAt).toLocaleString()}</div>
                   )}
+                  
+                  {/* Items List */}
+                  <div className="mt-3 border-t border-gray-100 pt-2">
+                    <div className="text-sm font-semibold text-gray-700 mb-1">Items:</div>
+                    <div className="space-y-1">
+                      {(o.items || []).map((item, idx) => (
+                        <div key={idx} className="text-sm text-gray-600 flex items-center gap-2">
+                          <span className="font-medium text-gray-800">{item.qty || item.quantity}x</span>
+                          <span>
+                            {item.name}
+                            {(item.variant || item.portion) && (
+                              <span className="text-gray-500 font-medium ml-1">
+                                {(() => {
+                                  const v = (item.variant || item.portion).toString().toLowerCase();
+                                  if (v.includes('half')) return '(H)';
+                                  if (v.includes('full')) return '(F)';
+                                  if (v.includes('6')) return '(6)';
+                                  if (v.includes('12')) return '(12)';
+                                  return `(${item.variant || item.portion})`;
+                                })()}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Order ready time */}
                   {o.items && o.items.length > 0 && (
                     (() => {
@@ -127,7 +160,7 @@ export default function OrdersPage() {
                 <h4 className="font-semibold text-sm text-gray-700 mb-1">Items:</h4>
                 {(o.items || []).map(it => (
                   <div key={it._id || it.id} className="text-sm text-gray-600">
-                    {it.name} x {it.qty || it.quantity || 1}
+                    {it.name} {it.portion ? `(${it.portion})` : ''} x {it.qty || it.quantity || 1}
                   </div>
                 ))}
               </div>
