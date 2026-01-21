@@ -4,6 +4,17 @@
  * @param {Array} allMenuItems - All available menu items
  * @returns {Array} - 5-6 suggested items
  */
+
+// Fisher-Yates shuffle algorithm for unbiased shuffling
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 export const getSuggestions = (cartItems, allMenuItems) => {
   if (!Array.isArray(allMenuItems) || allMenuItems.length === 0) {
     return [];
@@ -51,7 +62,7 @@ export const getSuggestions = (cartItems, allMenuItems) => {
 
   if (otherCategories.length > 0) {
     // Shuffle categories to add randomness
-    const shuffledCategories = otherCategories.sort(() => 0.5 - Math.random());
+    const shuffledCategories = shuffleArray(otherCategories);
     
     for (const category of shuffledCategories) {
       if (suggestions.length >= targetCount) break;
@@ -70,11 +81,11 @@ export const getSuggestions = (cartItems, allMenuItems) => {
     );
     
     // Shuffle and take what we need
-    const shuffled = remainingItems.sort(() => 0.5 - Math.random());
+    const shuffled = shuffleArray(remainingItems);
     const needed = targetCount - suggestions.length;
     suggestions.push(...shuffled.slice(0, needed));
   }
 
   // Final shuffle of suggestions to add variety
-  return suggestions.sort(() => 0.5 - Math.random()).slice(0, targetCount);
+  return shuffleArray(suggestions).slice(0, targetCount);
 };
