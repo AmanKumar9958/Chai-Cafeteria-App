@@ -1,11 +1,13 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
+import { getSuggestions } from '../utils/suggestionEngine';
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const [items, setItems] = useState([]); // { itemId, name, price, qty }
+  const [suggestions, setSuggestions] = useState([]);
   const { user } = useAuth();
 
   // Build a stable per-user storage key; fallback to guest
@@ -106,8 +108,13 @@ export const CartProvider = ({ children }) => {
 
   const clear = () => setItems([]);
 
+  const updateSuggestions = (allMenuItems) => {
+    const newSuggestions = getSuggestions(items, allMenuItems);
+    setSuggestions(newSuggestions);
+  };
+
   return (
-    <CartContext.Provider value={{ items, addItem, addItemsBatch, removeItem, updateQty, clear }}>
+    <CartContext.Provider value={{ items, addItem, addItemsBatch, removeItem, updateQty, clear, suggestions, updateSuggestions }}>
       {children}
     </CartContext.Provider>
   );
