@@ -37,14 +37,14 @@ export const getSuggestions = (cartItems, allMenuItems) => {
   // Extract categories from cart items
   const cartCategories = new Set(
     (cartItems || [])
-      .map(item => (item.category || '').toLowerCase())
+      .map(item => String(item.category || ''))
       .filter(Boolean)
   );
 
   // Categorize available items
   const itemsByCategory = {};
   availableItems.forEach(item => {
-    const category = (item.category || 'other').toLowerCase();
+    const category = String(item.category || 'other');
     if (!itemsByCategory[category]) {
       itemsByCategory[category] = [];
     }
