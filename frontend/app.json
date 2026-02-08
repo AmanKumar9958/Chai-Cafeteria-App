@@ -4,7 +4,7 @@
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/android-icon-foreground.png",
+    "icon": "./assets/images/chai-cafeteria-icon.png",
     "scheme": "chai-cafeteria",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -14,7 +14,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFF7ED",
-        "foregroundImage": "./assets/images/android-icon-foreground.png"
+        "foregroundImage": "./assets/images/chai-cafeteria-icon.png"
       },
       "newArchEnabled": true,
       "versionCode": 12,
@@ -25,7 +25,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/android-icon-background.png",
+      "favicon": "./assets/images/chai-cafeteria-icon.png",
       "bundler": "metro"
     },
     "plugins": [
