@@ -1,15 +1,15 @@
 {
   "expo": {
     "name": "Chai Cafeteria",
-    "slug": "frontend",
-    "version": "1.0.0",
+    "slug": "chai-cafeteria",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/chai-cafeteria-icon.png",
     "scheme": "chai-cafeteria",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chaicafeteriaranchi.frontend"
+      "bundleIdentifier": "com.solostackdev.chaicafeteria"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +18,7 @@
       },
       "newArchEnabled": true,
       "versionCode": 12,
-      "package": "com.chaicafeteriaranchi.frontend",
+      "package": "com.solostackdev.chaicafeteria",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION"
       ]
