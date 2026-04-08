@@ -2,7 +2,7 @@
   "expo": {
     "name": "Chai Cafeteria",
     "slug": "chai-cafeteria",
-    "version": "4.0.0",
+    "version": "5.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/chai-cafeteria-icon.png",
     "scheme": "chai-cafeteria",
