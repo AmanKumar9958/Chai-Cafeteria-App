@@ -17,7 +17,7 @@
         "foregroundImage": "./assets/images/chai-cafeteria-icon.png"
       },
       "newArchEnabled": true,
-      "versionCode": 12,
+      "versionCode": 16,
       "package": "com.solostackdev.chaicafeteria",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION"
