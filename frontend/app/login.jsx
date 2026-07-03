@@ -4,22 +4,46 @@ import { View, Text, TextInput, ActivityIndicator, Animated, Easing } from 'reac
 import { Image as ExpoImage } from 'expo-image';
 import AnimatedPressable from '../components/AnimatedPressable';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import { Feather } from '@expo/vector-icons';
+import { Feather, AntDesign } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
+GoogleSignin.configure({
+  webClientId: '694500735761-f3l3nn95gk9j7g6ba25os8s6rbj5dn5c.apps.googleusercontent.com',
+});
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
   const { t } = useTranslation();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken || userInfo.idToken;
+      if (idToken) {
+        await googleLogin(idToken);
+      } else {
+        console.error('No idToken found in Google response');
+      }
+    } catch (error) {
+      console.error('Google Signin Error:', error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -109,6 +133,28 @@ export default function LoginScreen() {
         <View className="flex-row justify-end mt-3">
           <Link href="/forgot-password"><Text className="text-chai-primary font-semibold">{t('app.forgot_password')}</Text></Link>
         </View>
+
+        <View className="flex-row items-center my-6">
+          <View className="flex-1 h-px bg-chai-divider" />
+          <Text className="mx-4 text-chai-text-secondary font-semibold">OR</Text>
+          <View className="flex-1 h-px bg-chai-divider" />
+        </View>
+
+        <AnimatedPressable
+          onPress={handleGoogleLogin}
+          className="border border-chai-divider p-4 rounded-xl items-center flex-row justify-center bg-white"
+          disabled={isGoogleLoading || isLoading}
+          haptic="selection"
+        >
+          {isGoogleLoading ? (
+            <ActivityIndicator color="#E8751A" />
+          ) : (
+            <>
+              <AntDesign name="google" size={24} color="#DB4437" style={{ marginRight: 10 }} />
+              <Text className="text-chai-text-primary text-lg font-bold">Continue with Google</Text>
+            </>
+          )}
+        </AnimatedPressable>
 
         <View className="flex-row justify-center items-center mt-6">
           <Text className="text-chai-text-secondary text-lg">{t('app.dont_have_account')}</Text>

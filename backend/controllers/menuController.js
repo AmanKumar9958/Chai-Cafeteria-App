@@ -13,7 +13,15 @@ function slugify(name = '') {
 exports.getCategories = async (req, res) => {
   try {
     const withItems = req.query.withItems === '1' || req.query.withItems === 'true';
-    const cats = await Category.find().sort({ name: 1 });
+    // Pagination (optional for categories since they're typically few)
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const skip = (page - 1) * limit;
+
+    const [cats, total] = await Promise.all([
+      Category.find().sort({ name: 1 }).skip(skip).limit(limit),
+      Category.countDocuments(),
+    ]);
 
     if (withItems) {
       const catIds = cats.map(c => c._id);
@@ -24,10 +32,10 @@ exports.getCategories = async (req, res) => {
         return acc;
       }, {});
       const enriched = cats.map(c => ({ ...c.toObject(), items: itemsByCat[String(c._id)] || [] }));
-      return res.json({ categories: enriched });
+      return res.json({ categories: enriched, page, limit, total });
     }
 
-    res.json({ categories: cats });
+    res.json({ categories: cats, page, limit, total });
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
@@ -37,12 +45,19 @@ exports.getCategories = async (req, res) => {
 exports.getItems = async (req, res) => {
   try {
     const { category } = req.query; // category id or 'all'
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
     const filter = { active: true };
     if (category && category !== 'all') {
       filter.category = category;
     }
-    const items = await Item.find(filter).populate('category');
-    res.json({ items });
+    const [items, total] = await Promise.all([
+      Item.find(filter).populate('category').skip(skip).limit(limit),
+      Item.countDocuments(filter),
+    ]);
+    res.json({ items, page, limit, total });
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
@@ -53,9 +68,19 @@ exports.getItems = async (req, res) => {
 exports.search = async (req, res) => {
   try {
     const q = req.query.q || '';
-    const items = await Item.find({ name: new RegExp(q, 'i'), active: true }).populate('category');
-    const categories = await Category.find({ name: new RegExp(q, 'i') });
-    res.json({ items, categories });
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const itemFilter = { name: new RegExp(q, 'i'), active: true };
+    const catFilter = { name: new RegExp(q, 'i') };
+
+    const [items, itemsTotal, categories] = await Promise.all([
+      Item.find(itemFilter).populate('category').skip(skip).limit(limit),
+      Item.countDocuments(itemFilter),
+      Category.find(catFilter),
+    ]);
+    res.json({ items, categories, page, limit, total: itemsTotal });
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');

@@ -9,4 +9,8 @@ const CategorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// ── Performance Indexes ──
+// Text index on name for faster category search
+CategorySchema.index({ name: 'text' });
+
 module.exports = mongoose.model('Category', CategorySchema);

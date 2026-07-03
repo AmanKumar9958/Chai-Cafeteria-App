@@ -4,6 +4,8 @@ import '../i18n'; // initialize i18n
 import React, { useEffect, useState } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { QueryClientProvider } from '@tanstack/react-query';
+import queryClient from '../utils/queryClient';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CartProvider } from '../context/CartContext';
 import * as SplashScreen from 'expo-splash-screen';
@@ -141,12 +143,14 @@ export default function RootLayout() {
     ),
   };
   return (
-    <AuthProvider>
-      <CartProvider>
-        <StatusBar style="dark" backgroundColor="#FFFFFF" />
-        <MainLayout />
-        <Toast position="top" topOffset={60} config={toastConfig} />
-      </CartProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CartProvider>
+          <StatusBar style="dark" backgroundColor="#FFFFFF" />
+          <MainLayout />
+          <Toast position="top" topOffset={60} config={toastConfig} />
+        </CartProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

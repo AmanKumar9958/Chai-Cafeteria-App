@@ -76,6 +76,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const googleLogin = async (idToken) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/google-login`, { idToken });
+      const { token } = response.data;
+      await authenticateWithToken(token, 'Logged in with Google!');
+    } catch (error) {
+      const serverMsg = error?.response?.data?.msg || error?.response?.data || error?.message || 'Unknown error';
+      console.error('Google Login failed:', serverMsg);
+      Toast.show({ type: 'bannerError', text1: 'Google Login failed', text2: String(serverMsg) });
+    }
+  };
+
   const refreshProfile = async () => {
     if (!userToken) return;
     try {
@@ -118,6 +130,7 @@ export const AuthProvider = ({ children }) => {
     userToken,
     isLoading,
     login,
+    googleLogin,
     authenticateWithToken,
     logout,
     refreshProfile,

@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
+import React, { useEffect, useState, useRef, memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, FlatList, ActivityIndicator, Animated } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message'; 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import { useCart } from '../../context/CartContext';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
@@ -15,6 +16,24 @@ import { useTabBarScroll } from '../../context/TabBarContext';
 
 const RAW_API = process.env.EXPO_PUBLIC_API_URL;
 const API_URL = RAW_API ? (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`) : 'http://YOUR_COMPUTER_IP_ADDRESS:5000/api';
+
+// ── API fetch functions (used by React Query) ──
+const fetchCategories = async () => {
+  const res = await axios.get(`${API_URL}/menu/categories`);
+  return res.data.categories || [];
+};
+
+const fetchItems = async ({ category, query }) => {
+  let res;
+  if (query && query.length > 0) {
+    res = await axios.get(`${API_URL}/menu/search`, { params: { q: query, limit: 50 } });
+  } else if (category === 'all') {
+    res = await axios.get(`${API_URL}/menu/items`, { params: { limit: 50 } });
+  } else {
+    res = await axios.get(`${API_URL}/menu/items`, { params: { category, limit: 50 } });
+  }
+  return res.data?.items || [];
+};
 
 export default function MenuScreen() {
   const insets = useSafeAreaInsets();
@@ -29,12 +48,8 @@ export default function MenuScreen() {
   const [query, setQuery] = useState(incomingSearch ? String(incomingSearch) : '');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const debounceTimer = useRef();
-  const [categories, setCategories] = useState([{ _id: 'all', name: 'All' }]);
   const [selected, setSelected] = useState(initialCategory);
-  const [items, setItems] = useState([]);
   const [visibleCount, setVisibleCount] = useState(6); // For 'all' category pagination
-  const [isLoadingCats, setIsLoadingCats] = useState(true);
-  const [isLoadingItems, setIsLoadingItems] = useState(true);
   const { addItem, items: itemsInCart } = useCart();
   const [showCheckout, setShowCheckout] = useState(false);
   const checkoutAnim = useRef(new Animated.Value(0)).current;
@@ -42,6 +57,20 @@ export default function MenuScreen() {
 
   const [customizationItem, setCustomizationItem] = useState(null);
   const [isCustomizationVisible, setIsCustomizationVisible] = useState(false);
+
+  // ── React Query: Categories ──
+  const { data: categoriesData = [], isLoading: isLoadingCats } = useQuery({
+    queryKey: ['menu', 'categories'],
+    queryFn: fetchCategories,
+    staleTime: 5 * 60 * 1000, // Categories rarely change, 5 min stale
+  });
+  const categories = useMemo(() => [{ _id: 'all', name: 'All' }, ...categoriesData], [categoriesData]);
+
+  // ── React Query: Items ──
+  const { data: items = [], isLoading: isLoadingItems } = useQuery({
+    queryKey: ['menu', 'items', selected, debouncedQuery],
+    queryFn: () => fetchItems({ category: selected, query: debouncedQuery }),
+  });
 
   useEffect(() => {
     if (itemsInCart.length > 0) {
@@ -57,8 +86,6 @@ export default function MenuScreen() {
     setQuery('');
     setDebouncedQuery('');
     setSelected(cid);
-    setItems([]);
-    setIsLoadingItems(true);
   };
 
   const normalizeImageUrl = (u) => {
@@ -75,19 +102,6 @@ export default function MenuScreen() {
       return url;
     } catch { return null; }
   };
-
-  useEffect(() => {
-    const fetchCats = async () => {
-      setIsLoadingCats(true);
-      try {
-        const res = await axios.get(`${API_URL}/menu/categories`);
-        setCategories([{ _id: 'all', name: 'All' }, ...(res.data.categories || [])]);
-      } catch (err) {
-        console.error('Failed to load categories:', err);
-      } finally { setIsLoadingCats(false); }
-    };
-    fetchCats();
-  }, []);
 
   useEffect(() => {
     if (categoryId) {
@@ -127,31 +141,14 @@ export default function MenuScreen() {
   }, [query]);
 
   // Only update debouncedQuery immediately when user submits
-  const handleSearchSubmit = React.useCallback(() => {
+  const handleSearchSubmit = useCallback(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     setDebouncedQuery(query);
   }, [query]);
 
+  // Reset visible count when category/search changes
   useEffect(() => {
-    const fetchItems = async () => {
-      setIsLoadingItems(true);
-      try {
-        let res;
-        if (debouncedQuery.length > 0) {
-          res = await axios.get(`${API_URL}/menu/search`, { params: { q: debouncedQuery } });
-        } else if (selected === 'all') {
-          res = await axios.get(`${API_URL}/menu/items`);
-        } else {
-          res = await axios.get(`${API_URL}/menu/items`, { params: { category: selected } });
-        }
-        setItems(res.data?.items || []);
-        setVisibleCount(6); // Reset visible count when category/search changes
-      } catch (err) {
-        console.error('Failed to load items:', err);
-        setItems([]);
-      } finally { setIsLoadingItems(false); }
-    };
-    fetchItems();
+    setVisibleCount(6);
   }, [selected, debouncedQuery]);
 
   const renderCategory = ({ item }) => {
@@ -188,7 +185,7 @@ export default function MenuScreen() {
         >
           <View style={{ width: '100%', height: 128 }}>
             {!loaded && <View className="absolute inset-0"><Skeleton width="100%" height={128} borderRadius={16} /></View>}
-            <ExpoImage source={src} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={0} priority="high" onLoadEnd={() => setLoaded(true)} />
+            <ExpoImage source={src} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={0} priority="normal" onLoadEnd={() => setLoaded(true)} />
           </View>
           <View className="p-3">
             <Text className="text-lg font-semibold text-chai-text-primary mb-1" numberOfLines={1}>{item.name}</Text>
@@ -211,7 +208,7 @@ export default function MenuScreen() {
   });
   ItemCardBase.displayName = 'ItemCard';
 
-  const handleAddItem = React.useCallback((item) => {
+  const handleAddItem = useCallback((item) => {
     setCustomizationItem(item);
     setIsCustomizationVisible(true);
   }, []);
@@ -226,7 +223,7 @@ export default function MenuScreen() {
     Toast.show({ type: 'bannerSuccess', text1: t('app.added_to_cart'), text2: `${customizedItem.name}${portionText}` });
   };
 
-  const renderItemCard = React.useCallback(
+  const renderItemCard = useCallback(
     ({ item }) => <ItemCardBase item={item} onAdd={handleAddItem} />,
     [handleAddItem]
   );
@@ -261,6 +258,11 @@ export default function MenuScreen() {
         keyExtractor={(item) => item._id}
         numColumns={2}
         extraData={itemsInCart.length}
+        // ── FlatList Performance Props ──
+        initialNumToRender={6}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
         ListHeaderComponent={!isLoadingCats && categories.length > 0 ? (
           <View style={{ height: 64, backgroundColor: 'transparent' }}>
             <FlatList

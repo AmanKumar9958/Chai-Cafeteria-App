@@ -34,12 +34,19 @@ const { Types } = require('mongoose');
 // GET /api/orders (scoped to the authenticated user)
 exports.getOrders = async (req, res) => {
   try {
-    const userId = req?.user?.id || req?.user?._id || req?.userDoc?._id;
+    const userId = req?.user?.id || req?.user?._id;
     if (!userId) return res.status(401).json({ msg: 'Unauthorized' });
-    const orders = await Order.find({ user: userId })
-      .sort({ createdAt: -1 })
-      .lean();
-    res.json({ orders });
+
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 15));
+    const skip = (page - 1) * limit;
+
+    const filter = { user: userId };
+    const [orders, total] = await Promise.all([
+      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Order.countDocuments(filter),
+    ]);
+    res.json({ orders, page, limit, total });
   } catch (err) {
     console.error('getOrders', err);
     res.status(500).json({ message: err?.message || 'Server error' });
@@ -68,7 +75,7 @@ exports.updateOrderStatus = async (req, res) => {
 // POST /api/orders — frontend checkout (associate to authenticated user)
 exports.createOrder = async (req, res) => {
   try {
-    const userId = req?.user?.id || req?.user?._id || req?.userDoc?._id;
+    const userId = req?.user?.id || req?.user?._id;
     if (!userId) return res.status(401).json({ msg: 'Unauthorized' });
     const body = req.body || {};
     const items = Array.isArray(body.items)

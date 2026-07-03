@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
-module.exports = async function (req, res, next) {
+// Performance: Only verify the JWT here. Do NOT fetch the user document
+// from MongoDB on every request. Routes that need the full user doc
+// (e.g. /me, /profile) should fetch it themselves.
+module.exports = function (req, res, next) {
   // Expect token in Authorization header as: Bearer <token>
   const authHeader = req.header('Authorization');
   if (!authHeader) return res.status(401).json({ msg: 'No token, authorization denied' });
@@ -13,10 +15,6 @@ module.exports = async function (req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded.user;
-    // Optionally attach the full user document
-    const userDoc = await User.findById(req.user.id).select('-password -__v');
-    if (!userDoc) return res.status(401).json({ msg: 'User not found' });
-    req.userDoc = userDoc;
     next();
   } catch (err) {
     console.error('Auth middleware error', err.message);

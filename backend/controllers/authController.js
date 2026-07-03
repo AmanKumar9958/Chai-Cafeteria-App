@@ -5,6 +5,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sendOtpEmail } = require('../services/emailService');
 const PasswordReset = require('../models/PasswordReset');
+const { OAuth2Client } = require('google-auth-library');
+
+const client = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
+
 
 // Register a new user
 exports.register = async (req, res) => {
@@ -145,8 +149,7 @@ exports.login = async (req, res) => {
 // Get current user profile
 exports.me = async (req, res) => {
     try {
-        // auth middleware attaches userDoc
-        const user = req.userDoc || (await User.findById(req.user.id).select('-password -__v'));
+        const user = await User.findById(req.user.id).select('-password -__v');
         if (!user) return res.status(404).json({ msg: 'User not found' });
         res.json({ user });
     } catch (err) {
@@ -238,3 +241,51 @@ exports.resetPassword = async (req, res) => {
         return res.status(500).json({ msg: 'Server error' });
     }
 };
+
+// Google Login
+exports.googleLogin = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+        if (!idToken) {
+            return res.status(400).json({ msg: 'Google idToken is required' });
+        }
+
+        const ticket = await client.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_WEB_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        const { email, name } = payload;
+
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // Generate a random password for google users since they don't have one
+            const salt = await bcrypt.genSalt(10);
+            const randomPassword = Math.random().toString(36).slice(-10);
+            const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+            user = new User({
+                name,
+                email,
+                password: hashedPassword,
+                isVerified: true
+            });
+            await user.save();
+        } else if (!user.isVerified) {
+             // If they registered before but didn't verify, verify them now since Google verified their email
+             user.isVerified = true;
+             await user.save();
+        }
+
+        const jwtPayload = { user: { id: user.id } };
+        jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+            if (err) throw err;
+            res.json({ token });
+        });
+    } catch (err) {
+        console.error('googleLogin error', err.message);
+        res.status(500).send('Server error during Google Login');
+    }
+};

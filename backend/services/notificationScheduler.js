@@ -3,57 +3,96 @@ const { Expo } = require('expo-server-sdk');
 const User = require('../models/User');
 
 // Create a new Expo SDK client
-// optionally providing an access token if you have enabled push security
 const expo = new Expo();
 
+// Batch size for processing users — prevents loading all users into memory
+const BATCH_SIZE = 100;
+
+// Lock to prevent overlapping cron executions
+let isSending = false;
+
+/**
+ * Send push notifications in batches to avoid blocking the main thread
+ * and consuming excessive memory with large user bases.
+ */
 const sendDailyNotifications = async (title, body) => {
+  if (isSending) {
+    console.log('Notification job already running, skipping this execution.');
+    return;
+  }
+
+  isSending = true;
+  let totalSent = 0;
+  let totalSkipped = 0;
+
   try {
-    // 1. Find all users with a push token
-    const users = await User.find({ pushToken: { $ne: null } });
-    
-    if (users.length === 0) {
+    // Count total users with push tokens for logging
+    const totalUsers = await User.countDocuments({ pushToken: { $ne: null } });
+
+    if (totalUsers === 0) {
       console.log('No users with push tokens found.');
       return;
     }
 
-    let messages = [];
-    for (let user of users) {
-      // Check if the token is a valid Expo push token
-      if (!Expo.isExpoPushToken(user.pushToken)) {
-        console.error(`Push token ${user.pushToken} is not a valid Expo push token`);
-        continue;
-      }
+    console.log(`Starting notification send to ${totalUsers} users in batches of ${BATCH_SIZE}...`);
 
-      // Construct the message
-      messages.push({
-        to: user.pushToken,
-        sound: 'default',
-        title: title,
-        body: body,
-        data: { withSome: 'data' },
-      });
-    }
+    // Process users in batches using skip/limit instead of loading all at once
+    let processed = 0;
 
-    // 2. Batch the notifications
-    let chunks = expo.chunkPushNotifications(messages);
-    let tickets = [];
-
-    // 3. Send the chunks
-    for (let chunk of chunks) {
+    while (processed < totalUsers) {
       try {
-        let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-        console.log('Notification tickets:', ticketChunk);
-        tickets.push(...ticketChunk);
-      } catch (error) {
-        console.error('Error sending chunk:', error);
+        const users = await User.find({ pushToken: { $ne: null } })
+          .select('pushToken')
+          .skip(processed)
+          .limit(BATCH_SIZE)
+          .lean();
+
+        if (users.length === 0) break;
+
+        // Build messages for this batch
+        const messages = [];
+        for (const user of users) {
+          if (!Expo.isExpoPushToken(user.pushToken)) {
+            totalSkipped++;
+            continue;
+          }
+
+          messages.push({
+            to: user.pushToken,
+            sound: 'default',
+            title: title,
+            body: body,
+            data: { withSome: 'data' },
+          });
+        }
+
+        // Send this batch via Expo's chunking
+        if (messages.length > 0) {
+          const chunks = expo.chunkPushNotifications(messages);
+
+          for (const chunk of chunks) {
+            try {
+              const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+              totalSent += ticketChunk.length;
+            } catch (error) {
+              console.error(`Error sending notification chunk (batch starting at ${processed}):`, error.message);
+            }
+          }
+        }
+
+        processed += users.length;
+      } catch (batchError) {
+        console.error(`Error processing batch starting at ${processed}:`, batchError.message);
+        processed += BATCH_SIZE; // Skip this batch and continue
       }
     }
-    
-    // Note: You might want to handle receipt logic here if needed (to check for delivery errors)
-    console.log(`Sent ${messages.length} notifications.`);
+
+    console.log(`Notification job complete: ${totalSent} sent, ${totalSkipped} skipped (invalid tokens), ${totalUsers} total users.`);
 
   } catch (error) {
     console.error('Error in sendDailyNotifications:', error);
+  } finally {
+    isSending = false;
   }
 };
 

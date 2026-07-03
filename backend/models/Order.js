@@ -40,4 +40,10 @@ const OrderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// ── Performance Indexes ──
+// Composite index for the most common query: user's orders sorted by date
+OrderSchema.index({ user: 1, createdAt: -1 });
+// Index for admin queries filtering by order status
+OrderSchema.index({ status: 1 });
+
 module.exports = mongoose.model('Order', OrderSchema);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, memo } from 'react';
+import React, { useEffect, useState, memo, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { useCart } from '../../context/CartContext';
 import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { Image as ExpoImage } from 'expo-image';
 import { SearchBar } from '../../components/SearchBar';
@@ -51,6 +52,29 @@ const sliderImages = [
 
 const PRICE_FILTERS = [80, 100, 150, 200];
 
+// ── API fetch functions (used by React Query) ──
+const fetchHomeData = async () => {
+  const [catRes, itemRes] = await Promise.all([
+    axios.get(`${API_URL}/menu/categories`),
+    axios.get(`${API_URL}/menu/items`, { params: { limit: 100 } }),
+  ]);
+
+  const categories = (catRes.data.categories || []).filter(c => (c.name || '').toLowerCase() !== 'sandwich');
+  const allItems = itemRes.data.items || [];
+
+  // Pick 4 random items for initial display
+  const shuffled = [...allItems].sort(() => 0.5 - Math.random());
+  const randomItems = shuffled.slice(0, 4);
+
+  // Discover Delicious Pizzas section
+  const pizzaItems = allItems.filter(i => (i.name || '').toLowerCase().includes('pizza')).slice(0, 4);
+
+  // Wide range of burgers
+  const burgerItems = allItems.filter(i => (i.name || '').toLowerCase().includes('burger')).slice(0, 4);
+
+  return { categories, allItems, randomItems, pizzaItems, burgerItems };
+};
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const onScroll = useTabBarScroll();
@@ -61,19 +85,24 @@ export default function HomeScreen() {
   const [greeting, setGreeting] = useState('Good Morning');
   const [greetingKey, setGreetingKey] = useState(getGreetingKey());
   
-  // Data States
-  const [categories, setCategories] = useState([]);
-  const [allItems, setAllItems] = useState([]); // Store all items for filtering
-  const [randomItems, setRandomItems] = useState([]); // Store initial random selection
-  const [pizzaItems, setPizzaItems] = useState([]); 
-  const [burgerItems, setBurgerItems] = useState([]); 
-  
-  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activePriceFilter, setActivePriceFilter] = useState(null);
 
   const sliderWidth = Dimensions.get('window').width - 48;
   const bottomPadding = Platform.OS === 'ios' ? Math.max(88, insets.bottom + 88) : 24;
+
+  // ── React Query: Home Data ──
+  const { data: homeData, isLoading } = useQuery({
+    queryKey: ['home', 'data'],
+    queryFn: fetchHomeData,
+    staleTime: 5 * 60 * 1000, // 5 min — home data doesn't change often
+  });
+
+  const categories = homeData?.categories || [];
+  const allItems = homeData?.allItems || [];
+  const randomItems = homeData?.randomItems || [];
+  const pizzaItems = homeData?.pizzaItems || [];
+  const burgerItems = homeData?.burgerItems || [];
 
   const normalizeImageUrl = (u) => {
     try {
@@ -95,38 +124,6 @@ export default function HomeScreen() {
   useEffect(() => {
     setGreeting(getGreeting());
     setGreetingKey(getGreetingKey());
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [catRes, itemRes] = await Promise.all([
-          axios.get(`${API_URL}/menu/categories`),
-          axios.get(`${API_URL}/menu/items`)
-        ]);
-        
-        setCategories((catRes.data.categories || []).filter(c => (c.name || '').toLowerCase() !== 'sandwich'));
-        
-        const fetchedItems = itemRes.data.items || [];
-        setAllItems(fetchedItems);
-
-        // Pick 4 random items for initial display
-        const shuffled = [...fetchedItems].sort(() => 0.5 - Math.random());
-        setRandomItems(shuffled.slice(0, 4));
-
-        // Discover Delicious Pizzas section
-        const discoverPizzas = fetchedItems.filter(i => (i.name || '').toLowerCase().includes('pizza')).slice(0, 4);
-        setPizzaItems(discoverPizzas);
-
-        // Wide range of burgers
-        const discoverBurgers = fetchedItems.filter(i => (i.name || '').toLowerCase().includes('burger')).slice(0, 4);
-        setBurgerItems(discoverBurgers);
-
-      } catch (err) {
-        console.error('Failed to load data', err?.message || err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
   }, []);
 
   useEffect(() => {
@@ -219,7 +216,7 @@ export default function HomeScreen() {
             contentFit="cover" 
             cachePolicy="memory-disk"
             transition={0}
-            priority="high"
+            priority="normal"
             onLoadEnd={() => setLoaded(true)}
           />
         </View>

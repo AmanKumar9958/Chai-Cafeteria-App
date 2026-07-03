@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import Toast from 'react-native-toast-message';
@@ -16,15 +17,41 @@ import { useTabBarScroll } from '../../context/TabBarContext';
 const RAW_API = process.env.EXPO_PUBLIC_API_URL || 'http://10.225.33.106:5000';
 const API_URL = (RAW_API.endsWith('/api') ? RAW_API : `${RAW_API.replace(/\/$/, '')}/api`);
 
+// ── API fetch function (used by React Query) ──
+const fetchOrders = async (userToken) => {
+  if (!userToken) return [];
+  const res = await axios.get(`${API_URL}/orders`, { headers: { Authorization: `Bearer ${userToken}` } });
+  return res.data.orders || [];
+};
+
 export default function OrdersScreen() {
   const { t } = useTranslation();
   const onScroll = useTabBarScroll();
   const { userToken, user } = useAuth();
   const { addItemsBatch } = useCart() || {};
-  const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState([]);
   const insets = useSafeAreaInsets();
   const bottomPadding = Platform.OS === 'ios' ? Math.max(88, insets.bottom + 88) : 24;
+
+  // ── React Query: Orders ──
+  const { data: rawOrders = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['orders', userToken],
+    queryFn: () => fetchOrders(userToken),
+    enabled: !!userToken,
+  });
+
+  // Defensive: filter orders to current user
+  const orders = useMemo(() => {
+    const myId = user?._id || user?.id || user?.userId || user?.uid || null;
+    const myEmail = user?.email || user?.username || null;
+    return rawOrders.filter((o) => {
+      const oid = o?.user?._id || o?.userId || o?.user || o?.customerId || null;
+      const oemail = o?.user?.email || o?.userEmail || o?.email || null;
+      if (myId && oid && String(oid) === String(myId)) return true;
+      if (!myId && myEmail && oemail && String(oemail).toLowerCase() === String(myEmail).toLowerCase()) return true;
+      if (!oid && !oemail) return false;
+      return false;
+    });
+  }, [rawOrders, user]);
 
   const statusStyle = useMemo(() => ({
     'Order Placed': { bg: 'bg-[#FFF3E9]', text: 'text-chai-primary' },
@@ -34,42 +61,6 @@ export default function OrdersScreen() {
     'Delivered': { bg: 'bg-[#E9F5EC]', text: 'text-chai-success' },
     'Cancelled': { bg: 'bg-[#FBEAEA]', text: 'text-chai-error' },
   }), []);
-
-  const fetchOrders = useCallback(async () => {
-    if (!userToken) {
-      setLoading(false);
-      setOrders([]);
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API_URL}/orders`, { headers: { Authorization: `Bearer ${userToken}` } });
-      const incoming = res.data.orders || [];
-      // Defensive: filter orders to current user, in case backend forgets to scope
-      const myId = user?._id || user?.id || user?.userId || user?.uid || null;
-      const myEmail = user?.email || user?.username || null;
-      const mine = incoming.filter((o) => {
-        const oid = o?.user?._id || o?.userId || o?.user || o?.customerId || null;
-        const oemail = o?.user?.email || o?.userEmail || o?.email || null;
-        // Match by id when possible, else by email as a fallback
-        if (myId && oid && String(oid) === String(myId)) return true;
-        if (!myId && myEmail && oemail && String(oemail).toLowerCase() === String(myEmail).toLowerCase()) return true;
-        // If backend did not include any user marker, we can't be certain; drop it.
-        if (!oid && !oemail) return false;
-        return false;
-      });
-      setOrders(mine);
-    } catch (err) {
-      console.warn('Failed to load orders, treating as none', err?.response?.status || err.message);
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [userToken, user]);
-
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
 
   // Progress indicator for order status
   const STEPS = useMemo(() => ['Order Placed', 'Packing', 'Shipped', 'Out for delivery', 'Delivered'], []);
@@ -153,7 +144,7 @@ export default function OrdersScreen() {
     <SafeAreaView className="flex-1 bg-chai-bg pt-4 mt-4" style={{ paddingBottom: bottomPadding + 40 }}>
       <View className="px-4 pb-2 flex-row items-center justify-between">
         <Text numberOfLines={1} adjustsFontSizeToFit className="text-3xl font-extrabold text-chai-text-primary flex-1 mr-2 py-2">{`${t('app.my_orders')}`}</Text>
-        <AnimatedPressable onPress={fetchOrders} className="flex-row items-center gap-1 px-3 py-2 bg-chai-primary rounded-full" scaleTo={0.92} haptic="selection">
+        <AnimatedPressable onPress={() => refetch()} className="flex-row items-center gap-1 px-3 py-2 bg-chai-primary rounded-full" scaleTo={0.92} haptic="selection">
           <Ionicons name="refresh" size={16} color="#fff" />
           <Text className="text-white font-semibold">{`${t('app.refresh')}`}</Text>
         </AnimatedPressable>
@@ -166,6 +157,10 @@ export default function OrdersScreen() {
         keyExtractor={o => o._id || String(o.id)}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
         showsVerticalScrollIndicator={false}
+        // ── FlatList Performance Props ──
+        initialNumToRender={6}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         renderItem={({ item }) => (
           <View className="bg-white p-4 rounded-lg mx-4 mb-3 border border-chai-divider">
             <View className="flex-row justify-between items-center mb-1" style={{ flexWrap: 'nowrap' }}>
