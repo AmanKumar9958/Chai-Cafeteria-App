@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 // --- IMPORTANT ---
 // This should be the IP address of the computer running your backend server.
@@ -122,6 +123,11 @@ export const AuthProvider = ({ children }) => {
     setUserToken(null);
     setUser(null);
     await AsyncStorage.removeItem('userToken');
+    try {
+      await GoogleSignin.signOut();
+    } catch (error) {
+      console.log('Google Signout error (can be ignored if not signed in via Google)', error);
+    }
     Toast.show({ type: 'bannerInfo', text1: 'Logged out' });
     router.replace('/login'); // Navigate to login
   };

@@ -31,6 +31,13 @@ export default function LoginScreen() {
     setIsGoogleLoading(true);
     try {
       await GoogleSignin.hasPlayServices();
+      try {
+        // Clear any previous cached session so it ALWAYS asks you to choose an account
+        await GoogleSignin.signOut();
+      } catch (e) {
+        // Ignore error if there was no active session
+      }
+      
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken || userInfo.idToken;
       if (idToken) {

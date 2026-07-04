@@ -19,6 +19,7 @@
       "newArchEnabled": true,
       "versionCode": 16,
       "package": "com.solostackdev.chaicafeteria",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION"
       ]

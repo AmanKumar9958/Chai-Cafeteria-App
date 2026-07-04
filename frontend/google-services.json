@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "367343304655",
+    "project_id": "chai-cafeteria-app-a3a1d",
+    "storage_bucket": "chai-cafeteria-app-a3a1d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:367343304655:android:67c96a1f8663a069d15cba",
+        "android_client_info": {
+          "package_name": "com.solostackdev.chaicafeteria"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHwHTsoSouiS2-Hn5lc4iSK1OoB176AP8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
