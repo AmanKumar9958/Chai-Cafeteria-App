@@ -36,6 +36,7 @@ const OrderSchema = new mongoose.Schema(
     landmark: { type: String },
     pincode: { type: String },
     notes: { type: String },
+    isClosed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

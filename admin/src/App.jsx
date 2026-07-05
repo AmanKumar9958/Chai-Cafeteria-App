@@ -6,6 +6,7 @@ import ListPage from './pages/ListPage';
 import OrdersPage from './pages/OrdersPage';
 import CouponsPage from './pages/CouponsPage';
 import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
 import { useAuth } from './context/AuthContext';
 
 const Protected = ({ children }) => {
@@ -28,6 +29,9 @@ const App = () => {
           <nav className="flex items-center gap-2">
             {isAuthenticated ? (
               <>
+                <NavLink to="/dashboard" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                  Dashboard
+                </NavLink>
                 <NavLink to="/add" className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
                   Add New
                 </NavLink>
@@ -52,8 +56,9 @@ const App = () => {
       </header>
       <main className="max-w-6xl mx-auto px-4 py-6">
         <Routes>
-          <Route path="/" element={<Navigate to="/add" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/dashboard" element={<Protected><DashboardPage /></Protected>} />
           <Route path="/add" element={<Protected><AddPage /></Protected>} />
           <Route path="/list" element={<Protected><ListPage /></Protected>} />
           <Route path="/orders" element={<Protected><OrdersPage /></Protected>} />

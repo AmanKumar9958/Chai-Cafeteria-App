@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import API from '../api';
 import toast from 'react-hot-toast';
 
-function OrderCard({ o, onUpdateStatus }) {
+function OrderCard({ o, onUpdateStatus, onCloseOrder }) {
   const [expanded, setExpanded] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
 
   const orderId = o._id || o.id;
+  const isClosed = o.isClosed;
   const shortId = `ChaiCafe-${orderId.toString().slice(-6).toUpperCase()}`;
 
   async function sendNotification(title, body) {
@@ -27,15 +28,18 @@ function OrderCard({ o, onUpdateStatus }) {
   ];
 
   return (
-    <div className={`border border-gray-200 rounded-lg p-4 border-l-4 ${
-      o.status === 'Delivered' ? 'border-l-green-500' :
-      o.status === 'Cancelled' ? 'border-l-red-500' :
-      o.status === 'Order Placed' ? 'border-l-blue-500' :
-      'border-l-amber-500'
-    }`}>
+    <div className={`relative border border-gray-200 rounded-lg p-4 border-l-4 ${isClosed ? 'border-l-gray-400 bg-gray-50 opacity-80' :
+        o.status === 'Delivered' ? 'border-l-green-500' :
+          o.status === 'Cancelled' ? 'border-l-red-500' :
+            o.status === 'Order Placed' ? 'border-l-blue-500' :
+              'border-l-amber-500'
+      }`}>
       <div className="flex flex-col sm:flex-row justify-between sm:items-start">
         <div className="flex-1">
-          <strong className="text-gray-800">Order ID: {shortId}</strong>
+          <div className="flex items-center gap-3">
+            <strong className="text-gray-800">Order ID: {shortId}</strong>
+            {isClosed && <span className="bg-gray-300 text-gray-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest">Closed</span>}
+          </div>
           <div className="text-sm text-gray-600">{(o.items || []).length} items • <span className="font-medium">₹{o.total || o.amount || 0}</span></div>
           <div className="mt-1 text-xs flex gap-2 items-center">
             <span className={`px-2 py-0.5 rounded font-semibold text-xs 
@@ -48,7 +52,7 @@ function OrderCard({ o, onUpdateStatus }) {
           {o.createdAt && (
             <div className="mt-1 text-xs inline-block px-2 py-0.5 rounded bg-lime-300 text-gray-700 font-medium">Placed on: {new Date(o.createdAt).toLocaleString()}</div>
           )}
-          
+
           {/* Order ready time */}
           {o.items && o.items.length > 0 && (
             (() => {
@@ -65,11 +69,11 @@ function OrderCard({ o, onUpdateStatus }) {
             })()
           )}
         </div>
-        
+
         <div className="mt-3 sm:mt-0 flex flex-col items-start sm:items-end gap-2 relative">
-          <select 
-            value={o.status} 
-            onChange={e => onUpdateStatus(orderId, e.target.value)} 
+          <select
+            value={o.status}
+            onChange={e => onUpdateStatus(orderId, e.target.value)}
             className="w-full sm:w-auto border border-gray-300 rounded-md p-2 bg-white focus:ring-2 focus:ring-amber-500 outline-none text-sm"
           >
             <option value="Order Placed">Order Placed</option>
@@ -84,7 +88,7 @@ function OrderCard({ o, onUpdateStatus }) {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {/* Notify Button with Dropdown */}
             <div className="relative flex-1 sm:flex-none">
-              <button 
+              <button
                 onClick={() => setNotifyOpen(!notifyOpen)}
                 className="w-full px-3 py-1.5 bg-indigo-500 text-white rounded hover:bg-indigo-600 transition text-sm flex items-center justify-between gap-1"
               >
@@ -106,12 +110,26 @@ function OrderCard({ o, onUpdateStatus }) {
             </div>
 
             {/* Expand / Collapse Button */}
-            <button 
-              onClick={() => setExpanded(!expanded)} 
+            <button
+              onClick={() => setExpanded(!expanded)}
               className="flex-1 sm:flex-none px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition text-sm"
             >
               {expanded ? 'Collapse' : 'Expand'}
             </button>
+
+            {/* Close Order Button */}
+            {!isClosed && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to close this order?')) {
+                    onCloseOrder(orderId);
+                  }
+                }}
+                className="flex-1 sm:flex-none px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 transition text-sm font-medium"
+              >
+                Close Order
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -153,7 +171,7 @@ function OrderCard({ o, onUpdateStatus }) {
               </>
             )}
           </div>
-          
+
           <div className="mt-2 text-sm">
             <span className="text-gray-500">Coupon:</span>{' '}
             {o.couponCode ? o.couponCode : 'N/A'}
@@ -200,6 +218,15 @@ export default function OrdersPage() {
     }).then(() => load());
   }
 
+  async function closeOrder(id) {
+    const promise = API.put('/admin/orders/' + id + '/close');
+    toast.promise(promise, {
+      loading: 'Closing order...',
+      success: 'Order closed successfully!',
+      error: 'Failed to close order',
+    }).then(() => load());
+  }
+
   return (
     <div className="p-4">
       <div className="bg-white p-6 rounded-lg shadow-md">
@@ -222,7 +249,7 @@ export default function OrdersPage() {
         </div>
         <div className="space-y-4">
           {orders.map(o => (
-            <OrderCard key={o._id || o.id} o={o} onUpdateStatus={updateStatus} />
+            <OrderCard key={o._id || o.id} o={o} onUpdateStatus={updateStatus} onCloseOrder={closeOrder} />
           ))}
         </div>
       </div>
